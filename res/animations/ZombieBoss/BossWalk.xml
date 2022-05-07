@@ -1,0 +1,11 @@
+<!DOCTYPE SpriteDecomposer>
+<sprites image="BossWalk.png" transparentColor="">
+ <animation title="BossWalk" delay="150">
+  <cut w="83" x="48" y="82" h="91" row="1" col="1"/>
+  <cut w="83" x="239" y="80" h="93" row="1" col="1"/>
+  <cut w="83" x="430" y="87" h="86" row="1" col="1"/>
+  <cut w="83" x="624" y="82" h="91" row="1" col="1"/>
+  <cut w="83" x="815" y="80" h="93" row="1" col="1"/>
+  <cut w="83" x="1006" y="87" h="86" row="1" col="1"/>
+ </animation>
+</sprites>

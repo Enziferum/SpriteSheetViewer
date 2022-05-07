@@ -1,0 +1,15 @@
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/CMakeFiles/SpriteSheetViewer.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/CMakeFiles/edit_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/tinyfiledialog/CMakeFiles/tinyfiledialogs.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/tinyfiledialog/CMakeFiles/edit_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/tinyfiledialog/CMakeFiles/rebuild_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/TinyXML/CMakeFiles/edit_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/TinyXML/CMakeFiles/tinyxml.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/TinyXML/CMakeFiles/rebuild_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/CMakeFiles/robot2D_imgui.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/CMakeFiles/edit_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/CMakeFiles/rebuild_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/example/CMakeFiles/robot2D-imgui-example.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/example/CMakeFiles/edit_cache.dir
+C:/Users/ElNecromant/Documents/dev/cpp/SpriteSheetViewer/cmake-build-debug/ext/robot2D-imgui/example/CMakeFiles/rebuild_cache.dir

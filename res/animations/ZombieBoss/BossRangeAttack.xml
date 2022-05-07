@@ -1,0 +1,13 @@
+<!DOCTYPE SpriteDecomposer>
+<sprites image="spritesheet (2).png" transparentColor="">
+ <animation title="BossRangeAttack" delay="100">
+  <cut w="83" x="144" y="82" h="91" row="1" col="1"/>
+  <cut w="72" x="436" y="89" h="84" row="1" col="1"/>
+  <cut w="72" x="724" y="89" h="84" row="1" col="1"/>
+  <cut w="72" x="1012" y="89" h="84" row="1" col="1"/>
+  <cut w="111" x="1268" y="89" h="84" row="1" col="1"/>
+  <cut w="194" x="1473" y="89" h="84" row="1" col="1"/>
+  <cut w="193" x="1762" y="89" h="84" row="1" col="1"/>
+  <cut w="117" x="2126" y="89" h="84" row="1" col="1"/>
+ </animation>
+</sprites>

@@ -1,0 +1,11 @@
+<!DOCTYPE SpriteDecomposer>
+<sprites image="BossMeleeAttack.png" transparentColor="">
+ <animation title="BossMeleeAttack" delay="150">
+  <cut w="83" x="48" y="82" h="91" row="1" col="1"/>
+  <cut w="93" x="223" y="89" h="84" row="1" col="1"/>
+  <cut w="85" x="423" y="89" h="84" row="1" col="1"/>
+  <cut w="69" x="631" y="89" h="84" row="1" col="1"/>
+  <cut w="74" x="818" y="89" h="84" row="1" col="1"/>
+  <cut w="74" x="1010" y="89" h="84" row="1" col="1"/>
+ </animation>
+</sprites>

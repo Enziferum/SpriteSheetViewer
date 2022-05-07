@@ -1,0 +1,2 @@
+C:\msys64\mingw64\bin\ar.exe qc libtinyfiledialogs.a CMakeFiles/tinyfiledialogs.dir/src/tinyfiledialogs.c.obj
+C:\msys64\mingw64\bin\ranlib.exe libtinyfiledialogs.a

@@ -1,0 +1,13 @@
+<!DOCTYPE SpriteDecomposer>
+<sprites image="BossDeath.png" transparentColor="">
+ <animation title="Default animation" delay="1000">
+  <cut w="83" x="48" y="82" h="91" row="1" col="1"/>
+  <cut w="56" x="260" y="82" h="91" row="1" col="1"/>
+  <cut w="59" x="451" y="83" h="90" row="1" col="1"/>
+  <cut w="81" x="621" y="83" h="98" row="1" col="1"/>
+  <cut w="81" x="813" y="83" h="98" row="1" col="1"/>
+  <cut w="79" x="1197" y="102" h="79" row="1" col="1"/>
+  <cut w="100" x="984" y="142" h="43" row="1" col="1"/>
+  <cut w="100" x="1368" y="142" h="43" row="1" col="1"/>
+ </animation>
+</sprites>
