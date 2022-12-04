@@ -120,7 +120,7 @@ namespace ImGui {
 
         m_shader.use();
         m_shader.set("Texture", 0);
-        m_shader.set("ProjMtx", orthoView.getMatrix());
+        m_shader.setMatrix("ProjMtx", orthoView.getMatrix());
 
 
         (void)vertex_array_object;

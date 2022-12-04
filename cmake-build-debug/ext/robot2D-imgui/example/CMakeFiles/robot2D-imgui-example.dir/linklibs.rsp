@@ -1,1 +1,0 @@
- ../librobot2D_imgui.a "C:/Program Files (x86)/robot2D/lib/librobot2D.a" -lopengl32 C:/msys64/mingw64/lib/libglfw3.dll.a "C:/Program Files (x86)/robot2D_ext/lib/librobot2D_ext.a" "C:/Program Files (x86)/spdlog/lib/libspdlog.a" -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 

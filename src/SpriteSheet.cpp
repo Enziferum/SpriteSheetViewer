@@ -1,8 +1,7 @@
-#include <iostream>
-#include <vector>
+#include <memory>
+#include <robot2D/Util/Logger.hpp>
 
-
-#include "viewer/SpriteSheet.hpp"
+#include <viewer/SpriteSheet.hpp>
 #include "TinyXML/tinyxml.h"
 
 namespace {
@@ -10,48 +9,75 @@ namespace {
     constexpr char* animationTag = "animation";
 }
 
-SpriteSheet::SpriteSheet():
-    animations() {}
+namespace viewer {
 
-bool SpriteSheet::loadFromFile(const std::string& path) {
-    const char* p = path.c_str();
-    TiXmlDocument document(p);
-    if (!document.LoadFile())
-        return false;
+    class ILoader {
+    public:
+        virtual ~ILoader() = 0;
+        virtual bool loadFromFile(const std::string& path, AnimationList& animations) = 0;
+    };
 
-    TiXmlElement* head = document.FirstChildElement(headTag);
-    if(!head)
-        return false;
+    ILoader::~ILoader() {}
 
-    TiXmlElement* animation = head -> FirstChildElement(animationTag);
-    if(!animation)
-        return false;
+    class XmlLoader: public ILoader {
+    public:
+        ~XmlLoader() override = default;
+        bool loadFromFile(const std::string& path, AnimationList& animations) override {
+            const char* p = path.c_str();
+            TiXmlDocument document(p);
+            if (!document.LoadFile())
+                return false;
 
-    while(animation) {
-        Animation anim;
-        anim.title = animation -> Attribute("title");
-        animation -> Attribute("delay", &anim.delay);
-        std::cout << "Start Process animation := " << anim.title << " delay := " << anim.delay << std::endl;
-        TiXmlElement* cut = animation -> FirstChildElement("cut");
-        if(!cut)
-            return false;
+            TiXmlElement* head = document.FirstChildElement(headTag);
+            if(!head)
+                return false;
 
-        while (cut) {
-            robot2D::IntRect frame;
-            cut -> Attribute("x", &frame.lx);
-            cut -> Attribute("y", &frame.ly);
-            cut -> Attribute("w", &frame.width);
-            cut -> Attribute("h", &frame.height);
-            //anim.frames_flip.push_back( IntRect(x+w,y,-w,h)  );
-            anim.frames.emplace_back(frame);
-            anim.flip_frames.emplace_back(robot2D::IntRect(frame.lx + frame.width, frame.ly, -frame.width,
-                                                           frame.height));
-            cut = cut->NextSiblingElement();
+            TiXmlElement* animation = head -> FirstChildElement(animationTag);
+            if(!animation)
+                return false;
+
+            while(animation) {
+                Animation anim;
+                anim.title = animation -> Attribute("title");
+                animation -> Attribute("delay", &anim.delay);
+                std::cout << "Start Process animation := " << anim.title << " delay := " << anim.delay << std::endl;
+                TiXmlElement* cut = animation -> FirstChildElement("cut");
+                if(!cut)
+                    return false;
+
+                while (cut) {
+                    robot2D::IntRect frame;
+                    cut -> Attribute("x", &frame.lx);
+                    cut -> Attribute("y", &frame.ly);
+                    cut -> Attribute("w", &frame.width);
+                    cut -> Attribute("h", &frame.height);
+                    anim.frames.emplace_back(frame);
+                    anim.flip_frames.emplace_back(robot2D::IntRect(frame.lx + frame.width, frame.ly, -frame.width,
+                                                                   frame.height));
+                    cut = cut->NextSiblingElement();
+                }
+                animation = animation -> NextSiblingElement();
+                std::cout << "Animation reading finish, got " << anim.frames.size() << " frames" << std::endl;
+                animations.emplace_back(anim);
+            }
+
+            return true;
         }
-        animation = animation -> NextSiblingElement();
-        std::cout << "Animation reading finish, got " << anim.frames.size() << " frames" << std::endl;
-        animations.emplace_back(anim);
+    };
+
+    std::unique_ptr<ILoader> getLoader() {
+        return std::make_unique<XmlLoader>();
     }
 
-    return false;
+    SpriteSheet::SpriteSheet():m_animations() {}
+
+    bool SpriteSheet::loadFromFile(const std::string& path) {
+
+        auto loader = getLoader();
+        if(!loader || !loader -> loadFromFile(path, m_animations))
+            return false;
+
+        return true;
+    }
+
 }
