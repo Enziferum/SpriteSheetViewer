@@ -13,8 +13,9 @@ file(GLOB_RECURSE SRC src/*.cpp)
 
 add_subdirectory(ext/TinyXML)
 add_subdirectory(ext/robot2D-imgui)
-
-set(LIBS robot2D robot2D_imgui tinyxml)
+#add_subdirectory(ext/Profiler)
+#profiler
+set(LIBS robot2D robot2D_imgui tinyxml )
 
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} ${LIBS})

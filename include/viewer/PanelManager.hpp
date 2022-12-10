@@ -11,6 +11,10 @@ namespace viewer {
     class PanelManager {
     public:
         PanelManager();
+        PanelManager(const PanelManager& other) = delete;
+        PanelManager& operator=(const PanelManager& other) = delete;
+        PanelManager(PanelManager&& other) = delete;
+        PanelManager& operator=(PanelManager&& other) = delete;
         ~PanelManager() = default;
 
         template<typename T, typename ...Args>
@@ -22,6 +26,10 @@ namespace viewer {
         void handleEvents(const robot2D::Event& event);
         void update(float dt);
         void render();
+
+        bool isMouseIsOver() const;
+    private:
+        void dockingUpdate();
     private:
         using PanelID = std::type_index;
         std::vector<IPanel::Ptr> m_panels;
@@ -46,6 +54,6 @@ namespace viewer {
 
         return *(static_cast<T*>(found -> get()));
     }
-}
+} // namespace viewer
 
 

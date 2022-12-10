@@ -165,6 +165,5 @@ int main() {
     engineConfiguration.windowSize = { 1280, 920 };
     engineConfiguration.windowTitle = "SpriteSheet";
 
-    //
     ROBOT2D_RUN_ENGINE(viewer::Viewer, engineConfiguration);
 }

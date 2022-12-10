@@ -89,7 +89,7 @@ namespace ImGui {
         m_cursors[ImGuiMouseCursor_ResizeEW].create(robot2D::CursorType::ResizeLeftRight);
         m_cursors[ImGuiMouseCursor_Hand].create(robot2D::CursorType::Hand);
         m_cursors[ImGuiMouseCursor_ResizeAll].createDefault();
-        m_cursors[ImGuiMouseCursor_ResizeNESW].createDefault();;
+        m_cursors[ImGuiMouseCursor_ResizeNESW].createDefault();
         m_cursors[ImGuiMouseCursor_ResizeNWSE].createDefault();
         m_cursors[ImGuiMouseCursor_NotAllowed].createDefault();
 
@@ -98,7 +98,6 @@ namespace ImGui {
 
 
     void Gui::handleEvents(const robot2D::Event &event) {
-
         if(m_windowHasFocus) {
             ImGuiIO& io = ImGui::GetIO();
             switch(event.type) {

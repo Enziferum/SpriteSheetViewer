@@ -8,28 +8,31 @@ namespace viewer {
             m_flip(false),
             m_speed(8.f),
             m_animatedSprite{nullptr},
-            m_spriteSheet{nullptr}
+            m_animation{nullptr}
     {}
 
 
-    void SpriteSheetAnimation::setSpriteSheet(SpriteSheet& spriteSheet) {
-        m_spriteSheet = &spriteSheet;
+    void SpriteSheetAnimation::setAnimation(Animation& animation) {
+        m_animation = &animation;
     }
 
     void SpriteSheetAnimation::update(float dt) {
-        if(m_animatedSprite == nullptr || m_spriteSheet -> empty())
+        if(m_animatedSprite == nullptr || m_animation == nullptr || !m_animation -> valid())
             return;
-        auto& animation = m_spriteSheet -> getAnimations()[0];
+
+        if(m_visibleFrameCounts == -1)
+            m_visibleFrameCounts = m_animation -> frames.size();
+
         m_currentFrame += m_speed * dt;
-        if((int)m_currentFrame >= animation.frames.size())
+        if((int)m_currentFrame >= m_animation -> frames.size())
             m_currentFrame = 0.f;
 
         if(m_flip)
-            m_animatedSprite -> setTextureRect(animation.flip_frames[int(m_currentFrame)]);
+            m_animatedSprite -> setTextureRect(m_animation -> flip_frames[int(m_currentFrame)]);
         else
-            m_animatedSprite->setTextureRect(animation.frames[int(m_currentFrame)]);
+            m_animatedSprite -> setTextureRect(m_animation -> frames[int(m_currentFrame)]);
 
-        auto frame = animation.frames[int(m_currentFrame)];
+        auto frame = m_animation -> frames[int(m_currentFrame)];
         //m_animatedSprite -> setSize({frame.width, frame.height});
     }
 
@@ -39,13 +42,12 @@ namespace viewer {
 
     void SpriteSheetAnimation::setAnimationRender(robot2D::Sprite& animationRender) {
         m_animatedSprite = &animationRender;
-        if(m_spriteSheet) {
-            auto &animation = m_spriteSheet->getAnimations()[0];
-            m_animatedSprite->setTextureRect(animation.frames[int(m_currentFrame)]);
+        if(m_animation) {
+            m_animatedSprite->setTextureRect(m_animation -> frames[int(m_currentFrame)]);
         }
     }
 
-    robot2D::Sprite* SpriteSheetAnimation::getSprite() {
+    robot2D::Sprite* SpriteSheetAnimation::getAnimationRender() {
         return m_animatedSprite;
     }
 
@@ -62,13 +64,13 @@ namespace viewer {
     }
 
     const size_t SpriteSheetAnimation::getFramesCount() const {
-        if(m_spriteSheet -> empty())
+        if(!m_animation)
             return 0;
 
         if(!m_flip)
-            return m_spriteSheet->getAnimations()[0].frames.size();
+            return m_animation -> frames.size();
         else
-            return m_spriteSheet->getAnimations()[0].flip_frames.size();
+            return m_animation -> flip_frames.size();
     }
 
     void SpriteSheetAnimation::setSpeed(const float &speed) {

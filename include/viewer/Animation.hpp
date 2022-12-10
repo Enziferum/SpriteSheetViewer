@@ -14,7 +14,7 @@
 namespace viewer {
     struct Animation {
         Animation() {}
-        Animation(std::string title, int delay) {}
+        Animation(std::string title_, int delay_): title{title_}, delay{delay_} {}
         ~Animation() = default;
 
         void addFrame(const robot2D::FloatRect& frame) {
@@ -22,6 +22,11 @@ namespace viewer {
             flip_frames.emplace_back(robot2D::IntRect{frame.lx + frame.width,
                                                       frame.ly, -frame.width,
                                                       frame.height});
+        }
+
+        void eraseFrame(int index) {
+            frames.erase(frames.begin() + index);
+            flip_frames.erase(frames.begin() + index);
         }
 
         bool valid() const {

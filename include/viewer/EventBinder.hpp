@@ -12,13 +12,63 @@
 
 #include <robot2D/Core/Event.hpp>
 
-#define BIND_CLASS_FN(fn) [this](auto&& ...args) -> decltype(auto) { \
-    this -> fn(std::forward<decltype(args)>(args)...);               \
+#include "macro.hpp"
+
+namespace robot2D {
+//    template<typename T>
+//    const T& eventAs(const robot2D::Event& event);
+//
+//    template<>
+//    const Event::MouseButtonEvent& eventAs(const robot2D::Event& event) {
+//        return event.mouse;
+//    }
+//
+//    template<>
+//    const Event::MouseWheelEvent& eventAs(const robot2D::Event& event) {
+//        return event.wheel;
+//    }
+//
+//    template<>
+//    const Event::MouseMoveEvent& eventAs(const robot2D::Event& event) {
+//        return event.move;
+//    }
+//
+//    template<>
+//    const Event::KeyboardEvent& eventAs(const robot2D::Event& event) {
+//        return event.key;
+//    }
+//
+//    template<>
+//    const Event::SizeEvent& eventAs(const robot2D::Event& event) {
+//        return event.size;
+//    }
 }
 
 namespace viewer {
 
-    struct EventBinder {
+    class EventBinder {
+        struct IFunc {
+            using Ptr = std::shared_ptr<IFunc>;
+            virtual ~IFunc() = 0;
+
+            virtual bool execute(const robot2D::Event& event) = 0;
+        };
+
+        template<typename F,
+                typename = std::enable_if_t<std::is_invocable_v<F, const robot2D::Event&>>
+                >
+        struct Func: IFunc {
+            explicit Func(F&& func): m_func{func} {}
+            ~Func() override = default;
+
+            bool execute(const robot2D::Event& event) override {
+                m_func(event);
+                return true;
+            }
+        private:
+            F m_func;
+        };
+    public:
         EventBinder() = default;
         EventBinder(const EventBinder& other) = delete;
         EventBinder& operator=(const EventBinder& other) = delete;
@@ -26,25 +76,9 @@ namespace viewer {
         EventBinder& operator=(EventBinder&& other) = delete;
         ~EventBinder() = default;
 
-        struct IFunc {
-            using Ptr = std::shared_ptr<IFunc>;
-            virtual ~IFunc() = 0;
-            virtual bool execute(const robot2D::Event& event) = 0;
-        };
 
-        template<typename F>
-        struct Func: IFunc {
-            explicit Func(F&& func): m_func{func} {}
-            ~Func() override = default;
-            F m_func;
-
-            bool execute(const robot2D::Event& event) override {
-                m_func(event);
-                return true;
-            }
-        };
-
-        template<typename F>
+        template<typename F,
+                typename = std::enable_if_t<std::is_invocable_v<F, const robot2D::Event&>>>
         void bindEvent(robot2D::Event::EventType eventType, F&& func) {
             auto funcPtr = std::make_shared<Func<F>>(std::forward<F>(func));
             if(!funcPtr)
@@ -53,10 +87,10 @@ namespace viewer {
         }
 
         void unBind(robot2D::Event::EventType eventType) {
-            auto found = m_events.find(eventType);
+            const auto& found = m_events.find(eventType);
             if(found == m_events.end())
                 return;
-            found -> second.reset();
+            m_events.erase(found);
         }
 
         // TODO(a.raag): try to execute not whole event

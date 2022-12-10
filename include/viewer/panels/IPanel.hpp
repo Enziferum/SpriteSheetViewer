@@ -18,6 +18,8 @@ namespace viewer {
 
         virtual void update(float dt) = 0;
         PanelID getID() const {return m_id;}
+
+        virtual bool isMouseOver() const { return false; }
     protected:
         PanelID m_id;
     };

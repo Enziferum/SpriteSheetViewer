@@ -1,6 +1,7 @@
 #pragma once
 
 #include <robot2D/Graphics/RenderTarget.hpp>
+#include <robot2D/Graphics/Texture.hpp>
 
 namespace viewer {
     struct Quad: public robot2D::Drawable {
@@ -18,12 +19,14 @@ namespace viewer {
 
             states.transform *= transform;
             states.color = color;
+            states.texture = texture;
             target.draw(states);
         }
 
         robot2D::Color color;
         robot2D::vec2f position;
         robot2D::vec2f size;
+        robot2D::Texture* texture{nullptr};
         robot2D::FloatRect aabb;
     };
 }
