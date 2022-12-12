@@ -4,11 +4,11 @@
 namespace viewer {
 
     SpriteSheetAnimation::SpriteSheetAnimation():
-            m_currentFrame(0.f),
-            m_flip(false),
-            m_speed(8.f),
+            m_animation{nullptr},
             m_animatedSprite{nullptr},
-            m_animation{nullptr}
+            m_currentFrame{0.f},
+            m_speed(8.f),
+            m_flip(false)
     {}
 
 
@@ -33,7 +33,6 @@ namespace viewer {
             m_animatedSprite -> setTextureRect(m_animation -> frames[int(m_currentFrame)]);
 
         auto frame = m_animation -> frames[int(m_currentFrame)];
-        //m_animatedSprite -> setSize({frame.width, frame.height});
     }
 
     void SpriteSheetAnimation::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const {
@@ -63,7 +62,7 @@ namespace viewer {
         return m_currentFrame;
     }
 
-    const size_t SpriteSheetAnimation::getFramesCount() const {
+    size_t SpriteSheetAnimation::getFramesCount() const {
         if(!m_animation)
             return 0;
 

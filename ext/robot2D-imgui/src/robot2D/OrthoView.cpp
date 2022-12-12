@@ -18,44 +18,39 @@ and must not be misrepresented as being the original software.
 3. This notice may not be removed or altered from any
 source distribution.
 *********************************************************************/
-#include <robot2D/Graphics/GL.hpp>
-#include <robot2D/Extra/OrthoView.hpp>
 
-namespace ImGui {
-    OrthoView::OrthoView(): currentPos{}, currentSize{},
-                 needUpdate{false} {
-        matrix[0][0] = 0.F; matrix[1][0] = 0.F; matrix[2][0] = 0.F; matrix[3][0] = 0.F;
-        matrix[0][1] = 0.F; matrix[1][1] = 0.F; matrix[2][1] = 0.F; matrix[3][1] = 0.F;
-        matrix[0][2] = 0.F; matrix[1][2] = 0.F; matrix[2][2] = -1.F; matrix[3][2] = 0.F;
-        matrix[0][3] = 0.F; matrix[1][3] = 0.F; matrix[2][3] = 0.F; matrix[3][3] = 1.F;
+#include <robot2D/imgui/OrthoView.hpp>
+
+namespace robot2D {
+    OrthoView::OrthoView():
+    m_viewport{},
+    needUpdate{false},
+    m_matrix{}
+    {
     }
 
-    void OrthoView::update(robot2D::vec2f pos, robot2D::vec2f size) {
-        if(currentPos != pos || currentSize != size) {
-            currentPos = pos;
-            currentSize = size;
+    void OrthoView::update(robot2D::FloatRect newViewport) {
+        if(m_viewport != newViewport) {
+            m_viewport = newViewport;
             needUpdate = true;
         }
     }
 
-    const float* OrthoView::getMatrix() {
+    const float* OrthoView::getMatrix() const {
         if(!needUpdate)
-            return &matrix[0][0];
-        float L = currentPos.x;
-        float R = currentPos.x + currentSize.x;
-        float T = currentPos.y;
-        float B = currentPos.y + currentSize.y;
+            return m_matrix.getRaw();
 
-#if defined(GL_CLIP_ORIGIN)
-        bool clip_origin_lower_left = true;
-        if (!clip_origin_lower_left) { float tmp = T; T = B; B = tmp; } // Swap top and bottom if origin is upper left
-#endif
-        matrix[0][0] = 2.0F/(R-L);
-        matrix[3][0] = (R+L)/(L-R);
-        matrix[1][1] = 2.0F/(T-B);
-        matrix[3][1] = (T+B)/(B-T);
+        float L = m_viewport.lx;
+        float R = m_viewport.lx + m_viewport.width;
+        float T = m_viewport.lx;
+        float B = m_viewport.ly + m_viewport.height;
+
+        m_matrix[0] = 2.0F / (R-L);
+        m_matrix[12] = (R+L) / (L-R);
+        m_matrix[5] = 2.0F / (T-B);
+        m_matrix[13] = (T+B) / (B-T);
         needUpdate = false;
-        return &matrix[0][0];
+        return m_matrix.getRaw();
     }
 
-}
+} // namespace robot2D

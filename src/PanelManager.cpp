@@ -1,4 +1,4 @@
-#include <robot2D/Extra/Api.hpp>
+#include <robot2D/imgui/Api.hpp>
 #include <viewer/PanelManager.hpp>
 
 namespace viewer {
@@ -39,11 +39,11 @@ namespace viewer {
         if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
             window_flags |= ImGuiWindowFlags_NoBackground;
 
-        ImGui::WindowOptions dockWindowOptions{};
+        robot2D::WindowOptions dockWindowOptions{};
         dockWindowOptions.flagsMask = window_flags;
         dockWindowOptions.name = "Scene";
 
-        ImGui::createWindow(dockWindowOptions, [this]() {
+        robot2D::createWindow(dockWindowOptions, [this]() {
 
             ImGui::PopStyleVar(2);
 

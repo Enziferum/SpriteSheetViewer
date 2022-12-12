@@ -3,10 +3,11 @@
 #include <string>
 
 #include <robot2D/Core/Vector2.hpp>
-#include <imgui/imgui.h>
 #include <robot2D/Graphics/Color.hpp>
 
-namespace ImGui {
+#include <imgui/imgui.h>
+
+namespace robot2D {
     struct WindowOptions {
         WindowOptions() = default;
         WindowOptions(std::map<int, robot2D::vec2f>&& variables,
@@ -24,4 +25,4 @@ namespace ImGui {
                                     | ImGuiWindowFlags_NoScrollWithMouse;
         std::string name;
     };
-}
+} // namespace robot2D

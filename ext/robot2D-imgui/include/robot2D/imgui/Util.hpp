@@ -4,4 +4,4 @@
 
 namespace ImGui {
     ImTextureID convertTextureHandle(const unsigned int& handle);
-}
+} // namespace ImGui

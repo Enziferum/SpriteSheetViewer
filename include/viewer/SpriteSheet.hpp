@@ -5,7 +5,6 @@
 #include <vector>
 
 #include <robot2D/Graphics/Rect.hpp>
-
 #include "Animation.hpp"
 
 namespace viewer {
@@ -39,7 +38,7 @@ namespace viewer {
     private:
         std::vector<Animation> m_animations;
     };
-}
+} // namespace viewer
 
 
 

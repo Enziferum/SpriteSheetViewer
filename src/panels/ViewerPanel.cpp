@@ -1,28 +1,10 @@
 #include <robot2D/Util/Logger.hpp>
 
-#include <robot2D/Extra/Api.hpp>
+#include <robot2D/imgui/Api.hpp>
 #include <viewer/panels/ViewerPanel.hpp>
-
-#include <tuple>
+#include <viewer/macro.hpp>
 
 namespace viewer {
-
-    template<typename F,
-            typename = std::enable_if_t<std::is_invocable_v<F>>>
-    struct Defer {
-        Defer(F&& func):
-            m_func{std::move(func)}{}
-
-        ~Defer() {
-            try{
-                if(m_func)
-                    m_func();
-            }
-            catch (...) {}
-        }
-
-        F m_func;
-    };
 
     ViewerPanel::ViewerPanel():
         IPanel(typeid(ViewerPanel)),
@@ -39,10 +21,15 @@ namespace viewer {
                                         | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings
                                         | ImGuiWindowFlags_NoBringToFrontOnFocus;
 
-        ImGui::Begin("Viewer");
-        Defer defer{&ImGui::End};
+        robot2D::WindowOptions windowOptions{};
+        windowOptions.flagsMask = 0;
+        windowOptions.name = "Viewer";
 
-        m_isMouseOver = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
+        robot2D::createWindow(windowOptions, BIND_CLASS_FN(guiUpdate));
+    }
+
+    void ViewerPanel::guiUpdate() {
+        checkMouseHover();
 
         if(!m_animation )
             return;
@@ -51,7 +38,12 @@ namespace viewer {
             return;
 
         auto contentSize = ImGui::GetContentRegionAvail();
-        robot2D::vec2f possibleImageSize = { 200, 200 };
-        ImGui::AnimatedImage(*render, possibleImageSize);
+        robot2D::vec2f possibleImageSize = { contentSize.x, contentSize.y };
+        robot2D::AnimatedImage(*render, possibleImageSize);
+
+        if(ImGui::Button("Play")) {
+            //m_animation -> play();
+        }
+
     }
 }

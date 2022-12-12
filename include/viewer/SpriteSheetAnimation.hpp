@@ -14,13 +14,13 @@ namespace viewer {
         robot2D::Sprite* getAnimationRender();
 
         void setFlip(const bool& flag);
-        const bool& isFlipped() const;
+        [[nodiscard]] const bool& isFlipped() const;
 
-        const int& getCurrentFrame() const;
-        const size_t getFramesCount() const;
+        [[nodiscard]] const int& getCurrentFrame() const;
+        [[nodiscard]] size_t getFramesCount() const;
 
         void setSpeed(const float& speed);
-        const float& getSpeed() const;
+        [[nodiscard]] const float& getSpeed() const;
         float& getSpeed();
 
         void reset();
@@ -31,12 +31,13 @@ namespace viewer {
             if(m_visibleFrameCounts < m_animation -> frames.size())
                 ++m_visibleFrameCounts;
         }
+
         void decreaseVisibleFrames() {
             if(m_visibleFrameCounts > 0)
                 --m_visibleFrameCounts;
         }
 
-        const int& getVisibleFrameCounts() const {
+        [[nodiscard]] const int& getVisibleFrameCounts() const {
             return m_visibleFrameCounts;
         }
 
@@ -46,11 +47,11 @@ namespace viewer {
         Animation* m_animation;
         robot2D::Sprite* m_animatedSprite;
 
-        bool m_flip;
         float m_currentFrame;
         float m_speed;
+        bool m_flip;
         int m_visibleFrameCounts{-1};
     };
 
-}
+} // namespace viewer
 

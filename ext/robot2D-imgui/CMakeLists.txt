@@ -28,26 +28,29 @@ set (SRC
         include/imgui/imstb_textedit.h
         include/imgui/imstb_truetype.h
         include/imgui/ImGui.hpp
-        include/robot2D/Extra/Api.hpp
-        include/robot2D/Extra/Gui.hpp
-        include/robot2D/Extra/OrthoView.hpp
-        include/robot2D/Extra/Util.hpp
-        include/robot2D/Extra/Render.hpp
-        include/robot2D/Extra/WindowOptions.hpp
+        include/robot2D/imgui/Api.hpp
+        include/robot2D/imgui/Gui.hpp
+        include/robot2D/imgui/OrthoView.hpp
+        include/robot2D/imgui/Util.hpp
+        include/robot2D/imgui/Render.hpp
+        include/robot2D/imgui/WindowOptions.hpp
+        include/robot2D/imgui/Widgets.hpp
         )
 
 set(SRC ${SRC}
-        src/imgui.cpp
-        src/imgui_widgets.cpp
-        src/imgui_tables.cpp
-        src/imgui_draw.cpp
-        src/imgui_demo.cpp
+        src/imgui/imgui.cpp
+        src/imgui/imgui_widgets.cpp
+        src/imgui/imgui_tables.cpp
+        src/imgui/imgui_draw.cpp
+        src/imgui/imgui_demo.cpp
+
         src/robot2D/Api.cpp
         src/robot2D/Gui.cpp
         src/robot2D/OrthoView.cpp
         src/robot2D/Util.cpp
         src/robot2D/Render.cpp
         src/robot2D/WindowOptions.cpp
+        src/robot2D/Widgets.cpp
         )
 
 add_library(${PROJECT_NAME} ${SRC})

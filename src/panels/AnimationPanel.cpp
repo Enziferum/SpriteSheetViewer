@@ -1,9 +1,15 @@
-#include <robot2D/Extra/Api.hpp>
+#include <robot2D/imgui/Api.hpp>
+
 #include <viewer/panels/AnimationPanel.hpp>
 #include <viewer/macro.hpp>
 #include <viewer/Messages.hpp>
 
 namespace viewer {
+    namespace {
+        constexpr float min_value = 1.f;
+        constexpr float max_value = 100.f;
+    }
+
     using closeCallback = void(*)();
     template<typename ImGuiFunc, typename ... Args>
     void imguiFunc(ImGuiFunc&& func, closeCallback&& close, Args&& ... args) {
@@ -129,7 +135,7 @@ namespace viewer {
     }
 
     void AnimationPanel::update(float dt) {
-        ImGui::WindowOptions windowOptions = ImGui::WindowOptions {
+        robot2D::WindowOptions windowOptions = robot2D::WindowOptions {
                 {
                         {ImGuiStyleVar_WindowPadding, {0, 0}}
                 },
@@ -139,13 +145,13 @@ namespace viewer {
         windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "AnimationPanel";
 
-        ImGui::createWindow(windowOptions, [this]() { windowFunction(); });
+        robot2D::createWindow(windowOptions, [this]() { windowFunction(); });
     }
 
 
     void AnimationPanel::windowFunction() {
-        const float min_value = 1.f;
-        const float max_value = 100.f;
+
+        checkMouseHover();
 
         InputText("Name", &m_currentName, 0, nullptr, nullptr);
         colorButton("Add", BIND_CLASS_FN(onAdd));
@@ -169,7 +175,8 @@ namespace viewer {
         ImGui::SameLine();
         ImGui::Text("%d", m_animation ? m_animation -> getVisibleFrameCounts() : 0);
 
-        std::string previewValue = m_lastCurrentAnimation >= 0 ? m_animationNames[m_lastCurrentAnimation] : "Default";
+        std::string previewValue = m_lastCurrentAnimation >= 0
+                    ? m_animationNames[m_lastCurrentAnimation] : "Default";
 
         if (ImGui::BeginCombo("Animations", previewValue.c_str(), 0))
         {

@@ -10,7 +10,7 @@ namespace viewer {
 
     void Viewer::setup() {
         assert(m_window != nullptr && "RenderWindow must be available already.");
-        m_gui.init(*m_window);
+        m_gui.setup(*m_window);
         m_scene.setup(m_window);
 
         {

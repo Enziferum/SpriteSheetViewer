@@ -21,22 +21,38 @@ source distribution.
 
 #pragma once
 
-#include <robot2D/Core/Vector2.hpp>
+#include <array>
 
-namespace ImGui {
+#include <robot2D/Graphics/RenderWindow.hpp>
 
-    class OrthoView {
+#include <imgui/imgui.h>
+#include "Render.hpp"
+
+namespace robot2D {
+
+    class Gui {
     public:
-        OrthoView();
-        ~OrthoView() = default;
+        Gui();
+        Gui(const Gui& other)=delete;
+        Gui& operator=(const Gui& other)=delete;
+        Gui(Gui&& other)=delete;
+        Gui& operator=(Gui&& other)=delete;
+        ~Gui() noexcept;
 
-        void update(robot2D::vec2f pos, robot2D::vec2f size);
-        const float* getMatrix();
+        void setup(robot2D::Window& window);
+
+        void handleEvents(const robot2D::Event& event);
+        void update(float dt);
+        void render();
     private:
-        robot2D::vec2f currentPos;
-        robot2D::vec2f currentSize;
-        bool needUpdate;
-        float matrix[4][4];
-    };
+        void shutdown();
+        void updateMouseCursor();
+    private:
+        robot2D::Window* m_window;
+        std::array<robot2D::Cursor, ImGuiMouseCursor_COUNT> m_cursors;
+        std::array<bool, 3> m_mousePressed;
 
-}
+        bool m_windowHasFocus;
+        GuiRender m_render;
+    };
+} // namespace robot2D

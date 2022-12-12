@@ -54,9 +54,6 @@ namespace viewer {
     }
 
 
-    struct BackgroundGrid {
-        robot2D::VertexArray::Ptr m_vertexArray;
-    };
 
     ViewerScene::ViewerScene(robot2D::MessageBus& messageBus, MessageDispatcher& dispatcher):
     m_messageBus{messageBus},
@@ -76,8 +73,10 @@ namespace viewer {
         m_sprite = m_animatedSprite;
         sheetAnimation.setAnimationRender( m_animatedSprite);
 
-        auto& viewer = m_panelManager.getPanel<viewer::ViewerPanel>();
+        auto& viewer = m_panelManager.getPanel<ViewerPanel>();
         viewer.setSpriteSheetAnimation(&sheetAnimation);
+        auto& animation = m_panelManager.getPanel<AnimationPanel>();
+        animation.setAnimation(&sheetAnimation);
     }
 
     void ViewerScene::setupBindings() {
@@ -95,7 +94,7 @@ namespace viewer {
         });
 
         m_eventBinder.bindEvent(robot2D::Event::MouseMoved, [this](const robot2D::Event& event) {
-            if(startedPressed) {
+            if(startedPressed && !m_panelManager.isMouseIsOver()) {
                 robot2D::vec2f movePos{event.move.x, event.move.y};
                 auto formatted = m_window -> mapPixelToCoords(movePos.as<int>(), m_camera2D.getCameraView());
                 movePos = formatted;
@@ -156,14 +155,48 @@ namespace viewer {
     }
 
 
+    void ViewerScene::handleEvents(const robot2D::Event& event) {
+        m_panelManager.handleEvents(event);
+        m_eventBinder.handleEvents(event);
+        m_camera2D.handleEvents(event);
+    }
+
+    void ViewerScene::update(float dt) {
+        sheetAnimation.update(dt);
+        m_panelManager.update(dt);
+        m_camera2D.update(dt, m_window);
+    }
+
+    void ViewerScene::render() {
+        m_frameBuffer -> Bind();
+        m_window -> clear(robot2D::Color::White);
+        m_window -> beforeRender();
+        m_window -> setView(m_camera2D.getCameraView());
+
+        m_window -> draw(m_sprite);
+        if(m_currentAnimation >= 0)
+            m_window -> draw(m_animations[m_currentAnimation]);
+
+        if(startedPressed) {
+            viewer::DebugCollider debugCollider;
+            debugCollider.aabb = movingAABB;
+            debugCollider.borderColor = selectColor;
+            m_window -> draw(debugCollider);
+        }
+
+        m_window -> afterRender();
+        m_panelManager.render();
+        m_frameBuffer -> unBind();
+    }
+
     void ViewerScene::onMousePressed(const robot2D::Event& event) {
         if(m_panelManager.isMouseIsOver())
             return;
+
         robot2D::vec2i convertedPoint { event.mouse.x, event.mouse.y };
         auto formatted = m_window -> mapPixelToCoords(convertedPoint, m_camera2D.getCameraView());
         formatted = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
         convertedPoint = formatted.as<int>();
-
 
         RB_INFO("Formatted Point by ViewerScene {0}: {1}", formatted.x, formatted.y);
 
@@ -194,6 +227,9 @@ namespace viewer {
     }
 
     void ViewerScene::onMouseReleased(const robot2D::Event& event) {
+        if(m_panelManager.isMouseIsOver())
+            return;
+
         if(updateAABBit == -1) {
             auto dd = viewer::DebugCollider{};
             dd.aabb = movingAABB;
@@ -242,48 +278,15 @@ namespace viewer {
     }
 
 
-    void ViewerScene::handleEvents(const robot2D::Event& event) {
-        m_panelManager.handleEvents(event);
-        m_eventBinder.handleEvents(event);
-        m_camera2D.handleEvents(event);
-    }
-
-    void ViewerScene::update(float dt) {
-        sheetAnimation.update(dt);
-        m_panelManager.update(dt);
-        m_camera2D.update(dt, m_window);
-    }
-
-    void ViewerScene::render() {
-        m_frameBuffer -> Bind();
-        m_window -> clear(robot2D::Color::White);
-        m_window -> beforeRender();
-        m_window -> setView(m_camera2D.getCameraView());
-
-        m_window -> draw(m_sprite);
-        if(m_currentAnimation >= 0)
-            m_window -> draw(m_animations[m_currentAnimation]);
-
-        if(startedPressed) {
-            viewer::DebugCollider debugCollider;
-            debugCollider.aabb = movingAABB;
-            debugCollider.borderColor = selectColor;
-            m_window -> draw(debugCollider);
-        }
-
-        m_window -> afterRender();
-        m_panelManager.render();
-        m_frameBuffer -> unBind();
-    }
-
     void ViewerScene::onAddAnimation(const AddAnimationMessage& message) {
         ViewerAnimation viewerAnimation{};
         viewerAnimation.getAnimation().title = message.name;
         m_animations.emplace_back(std::move(viewerAnimation));
         m_currentAnimation = m_animations.size() - 1;
 
-        auto& panel = m_panelManager.getPanel<ViewerPanel>();
-        auto* sheet = panel.getSpriteSheetAnimation();
+        auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
+        auto& animationPanel = m_panelManager.getPanel<AnimationPanel>();
+        auto* sheet = viewerPanel.getSpriteSheetAnimation();
         if(sheet)
             sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
     }

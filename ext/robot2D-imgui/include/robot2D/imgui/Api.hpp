@@ -28,11 +28,16 @@ source distribution.
 
 #include "WindowOptions.hpp"
 
-namespace ImGui {
+namespace robot2D {
     void createWindow(const WindowOptions& windowOptions, std::function<void()>&& callback);
+
     void dummyDragDrop(const std::string& payloadName, std::function<void(std::string)>&& callback);
+
     void Image(robot2D::Sprite& sprite, const robot2D::vec2f& size);
+
     void AnimatedImage(robot2D::Sprite& sprite, const robot2D::vec2f& size);
+
     bool ImageButton(const robot2D::Texture& texture, const robot2D::vec2f& size);
+
     void RenderFrameBuffer(const robot2D::FrameBuffer::Ptr& frameBuffer, const robot2D::vec2f& size);
-}
+} // namespace robot2D

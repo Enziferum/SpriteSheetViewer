@@ -1,5 +1,5 @@
 #include <robot2D/Engine.hpp>
-#include <robot2D/Extra/Gui.hpp>
+#include <robot2D/imgui/Gui.hpp>
 
 namespace {
     // ImGui ShowDemo
@@ -18,7 +18,7 @@ public:
     void guiUpdate(float deltaTime) override;
     void render() override;
 private:
-    ImGui::Gui m_gui;
+    robot2D::Gui m_gui;
 };
 
 MyApplication::MyApplication(): m_gui{} {}

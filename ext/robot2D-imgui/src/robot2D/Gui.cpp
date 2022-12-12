@@ -19,17 +19,16 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#include <robot2D/Extra/Gui.hpp>
-#include <robot2D/Extra/Util.hpp>
+#include <robot2D/imgui/Gui.hpp>
+#include <robot2D/imgui/Util.hpp>
 
-namespace ImGui {
+namespace robot2D {
 
 
     Gui::Gui():
     m_window(nullptr),
-    m_windowHasFocus{true},
-    m_mouseMoved{false},
     m_mousePressed{},
+    m_windowHasFocus{true},
     m_render{}
     {
         m_mousePressed[0] = false;
@@ -41,7 +40,7 @@ namespace ImGui {
         shutdown();
     }
 
-    void Gui::init(robot2D::Window& window) {
+    void Gui::setup(robot2D::Window& window) {
         m_window = &window;
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -102,7 +101,6 @@ namespace ImGui {
             ImGuiIO& io = ImGui::GetIO();
             switch(event.type) {
                 case robot2D::Event::MouseMoved:
-                    m_mouseMoved = true;
                     break;
                 case robot2D::Event::MousePressed:
                 case robot2D::Event::MouseReleased: {
@@ -193,16 +191,15 @@ namespace ImGui {
                 auto mousePos = m_window -> getMousePos();
                 io.MousePos = ImVec2(mousePos.x, mousePos.y);
             }
-            for (unsigned int it = 0; it < 3; it++) {
-                bool mousePressed = m_window -> isMousePressed(static_cast<robot2D::Mouse>(it));
-                io.MouseDown[it] = m_mousePressed[it] || mousePressed;
-                m_mousePressed[it] = false;
+            for (unsigned int i = 0; i < m_mousePressed.size(); ++i) {
+                bool mousePressed = m_window -> isMousePressed(static_cast<robot2D::Mouse>(i));
+                io.MouseDown[i] = m_mousePressed[i] || mousePressed;
+                m_mousePressed[i] = false;
             }
         }
 
-        if(io.MouseDrawCursor) {
-            m_window->setMouseCursorVisible(false);
-        }
+        if(io.MouseDrawCursor)
+            m_window -> setMouseCursorVisible(false);
 
         ImGui::NewFrame();
     }
@@ -210,12 +207,13 @@ namespace ImGui {
     void Gui::render() {
         ImGui::Render();
         ImDrawData* draw_data = ImGui::GetDrawData();
-        m_render.render(draw_data);
+        if(draw_data)
+            m_render.render(draw_data);
     }
 
     void Gui::shutdown() {
-        ImGui::GetIO().Fonts->SetTexID(convertTextureHandle(0));
+        ImGui::GetIO().Fonts -> SetTexID(ImGui::convertTextureHandle(0));
         ImGui::DestroyContext();
     }
 
-}
+} // namespace robot2D

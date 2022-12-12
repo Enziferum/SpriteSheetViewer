@@ -22,6 +22,7 @@ namespace viewer {
     class XmlLoader: public ILoader {
     public:
         ~XmlLoader() override = default;
+
         bool loadFromFile(const std::string& path, AnimationList& animations) override {
             const char* p = path.c_str();
             TiXmlDocument document(p);
@@ -69,7 +70,7 @@ namespace viewer {
         return std::make_unique<XmlLoader>();
     }
 
-    SpriteSheet::SpriteSheet():m_animations() {}
+    SpriteSheet::SpriteSheet():m_animations{} {}
 
     bool SpriteSheet::loadFromFile(const std::string& path) {
 
@@ -80,4 +81,4 @@ namespace viewer {
         return true;
     }
 
-}
+} // namespace viewer
