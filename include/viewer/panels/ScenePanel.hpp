@@ -16,7 +16,7 @@ namespace viewer {
         void update(float dt) override;
 
         robot2D::vec2f getPanelBounds() const {
-            return lastMousePos;
+            return m_ViewportBounds[0];
         }
     private:
         void guiRender();

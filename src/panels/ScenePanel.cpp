@@ -18,9 +18,25 @@ namespace viewer {
             mx -= m_ViewportBounds[0].x;
             my -= m_ViewportBounds[0].y;
 
-            lastMousePos = {mx, my};
+            auto pos = ImGui::GetWindowPos();
+            RB_INFO("ScenePanel POS {0}: {1}", pos.x, pos.y);
 
-            RB_INFO("Formatted Point by ScenePanel {0}: {1}", mx, my);
+            lastMousePos = {mx, my};
+            //lastMousePos = m_camera2D.mapPixelToCoords(lastMousePos);
+
+            auto& view = m_camera2D.getCameraView();
+            auto viewportSize = view.getSize();
+            auto viewportCenter = view.getCenter();
+
+            robot2D::FloatRect viewport {viewportCenter.x - viewportSize.x / 2.F,
+                                         viewportCenter.y - viewportSize.y / 2.F,
+                                         viewportSize.x, viewportSize.y};
+
+            RB_INFO("M_VIEWPORT SIZE {0}, {1}", m_ViewportSize.x, m_ViewportSize.y);
+
+            RB_INFO("Camera Viewport {0}, {1}, {2}, {3}", viewport.lx, viewport.ly, viewport.width, viewport.height);
+
+            RB_INFO("Formatted Point by ScenePanel {0}: {1}", lastMousePos.x, lastMousePos.y);
         }
 
         guiRender();

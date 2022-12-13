@@ -88,7 +88,7 @@ namespace viewer {
 
         m_eventBinder.bindEvent(robot2D::Event::Resized, [this](const robot2D::Event& event) {
             RB_INFO("New Size = {0} and {1}", event.size.widht, event.size.heigth);
-            m_window->resize({event.size.widht, event.size.heigth});
+            m_window -> resize({event.size.widht, event.size.heigth});
             m_camera2D.resetViewport({event.size.widht, event.size.heigth});
             m_frameBuffer -> Resize({event.size.widht, event.size.heigth});
         });
@@ -96,8 +96,10 @@ namespace viewer {
         m_eventBinder.bindEvent(robot2D::Event::MouseMoved, [this](const robot2D::Event& event) {
             if(startedPressed && !m_panelManager.isMouseIsOver()) {
                 robot2D::vec2f movePos{event.move.x, event.move.y};
-                auto formatted = m_window -> mapPixelToCoords(movePos.as<int>(), m_camera2D.getCameraView());
-                movePos = formatted;
+
+                auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
+                movePos -= bounds;
+                movePos = m_camera2D.mapPixelToCoords(movePos, m_frameBuffer);
 
                 movingAABB.width = movePos.x - movingAABB.lx;
                 movingAABB.height = movePos.y - movingAABB.ly;
@@ -194,9 +196,12 @@ namespace viewer {
             return;
 
         robot2D::vec2i convertedPoint { event.mouse.x, event.mouse.y };
-        auto formatted = m_window -> mapPixelToCoords(convertedPoint, m_camera2D.getCameraView());
-        formatted = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
+        auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
+        convertedPoint -= bounds.as<int>();
+        auto formatted = m_camera2D.mapPixelToCoords(convertedPoint.as<float>(), m_frameBuffer);
+//        formatted = bounds;
         convertedPoint = formatted.as<int>();
+
 
         RB_INFO("Formatted Point by ViewerScene {0}: {1}", formatted.x, formatted.y);
 
@@ -231,9 +236,11 @@ namespace viewer {
             return;
 
         if(updateAABBit == -1) {
-            auto dd = viewer::DebugCollider{};
-            dd.aabb = movingAABB;
-            m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
+            if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
+                auto dd = viewer::DebugCollider{};
+                dd.aabb = movingAABB;
+                m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
+            }
         } else {
             m_animations[m_currentAnimation][updateAABBit].aabb = movingAABB;
         }

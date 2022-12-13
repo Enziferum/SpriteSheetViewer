@@ -7,6 +7,7 @@ namespace viewer {
     struct DebugCollider: public robot2D::Drawable {
 
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates states) const override {
+            std::array<robot2D::Transform, 4> quads;
             quads[0].translate(aabb.lx, aabb.ly);
             quads[0].scale(aabb.width, borderSize);
 
@@ -30,7 +31,7 @@ namespace viewer {
         robot2D::FloatRect aabb;
         robot2D::Color borderColor = robot2D::Color::Green;
     private:
-        mutable std::array<robot2D::Transform, 4> quads;
+        mutable std::array<robot2D::Transform, 4> m_quads;
     };
 
 }
