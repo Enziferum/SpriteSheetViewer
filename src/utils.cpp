@@ -1,8 +1,11 @@
 #include <robot2D/Graphics/GL.hpp>
 #include <viewer/utils.hpp>
 
+#include <iostream>
+
 namespace viewer {
     std::vector<robot2D::Color> readPixels(const robot2D::IntRect& region,
+                                           const robot2D::FrameBuffer::Ptr& frameBuffer,
                                            robot2D::ImageColorFormat imageColorFormat) {
         GLenum format;
         int colorSize{0};
@@ -19,10 +22,60 @@ namespace viewer {
 
         /// 4 * width * height
         unsigned char* pixels = new unsigned char [colorSize * region.width * region.height];
-        glReadPixels(region.lx, region.ly, region.width, region.height, format, GL_UNSIGNED_BYTE, pixels);
+        glReadPixels(region.lx, region.ly, region.width, region.height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
         std::vector<robot2D::Color> colors;
         for(int i = 0; i < colorSize * region.width * region.height; i += 4)
-            colors.emplace_back(robot2D::Color::fromGL(pixels[0], pixels[1], pixels[2], pixels[3]));
+            colors.emplace_back(robot2D::Color{(int)pixels[i], (int)pixels[i + 1], (int)pixels[i + 2], (int)pixels[i + 3]});
+
+        delete[] pixels;
+
+        int cnt = 0;
+        for(const auto& color: colors) {
+            if(color.red == 255 && color.green == 255 && color.blue == 255 && color.alpha == 255)
+                continue;
+            else
+                ++cnt;
+        }
+
+        std::cout << "Not White Pixels = " << cnt << std::endl;
+
+        return colors;
+    }
+
+    robot2D::Color readPixel(robot2D::vec2f mousePos) {
+        unsigned char pixels[4];
+        glReadPixels(mousePos.x, mousePos.y, 1, 1, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        std::vector<robot2D::Color> colors;
+        std::cout << "R: " << (int)pixels[0] << std::endl;
+        std::cout << "G: " << (int)pixels[0+1] << std::endl;
+        std::cout << "B: " << (int)pixels[0+2] << std::endl;
+        std::cout << "A: " << (int)pixels[0+3] << std::endl;
+        std::cout << "------------------------" << std::endl;
+        return {(int)pixels[0], (int)pixels[1], (int)pixels[2], (int)pixels[3]};
+    }
+
+    std::vector<robot2D::Color> readPixels(const robot2D::IntRect& region) {
+        auto colorSize = 4;
+        unsigned char* pixels = new unsigned char [colorSize * region.width * region.height];
+        glReadPixels(region.lx, region.ly, region.width, region.height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+        std::vector<robot2D::Color> colors;
+        for(int i = 0; i < colorSize * region.width * region.height; i += 4) {
+            std::cout << "R: " << (int)pixels[i] << std::endl;
+            std::cout << "G: " << (int)pixels[i+1] << std::endl;
+            std::cout << "B: " << (int)pixels[i+2] << std::endl;
+            std::cout << "A: " << (int)pixels[i+3] << std::endl;
+            std::cout << "------------------------" << std::endl;
+            colors.emplace_back(robot2D::Color{(int)pixels[i], (int)pixels[i + 1], (int)pixels[i + 2], (int)pixels[i + 3]});
+        }
+
+        int cnt = 0;
+        for(const auto& color: colors) {
+            if(color.red == 0 && color.green == 255 && color.blue == 0 )
+                ++cnt;
+        }
+
+        std::cout << "cnt " << cnt << std::endl;
+
         return colors;
     }
 

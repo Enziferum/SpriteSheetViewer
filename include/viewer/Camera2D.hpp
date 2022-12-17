@@ -20,12 +20,13 @@ namespace viewer {
             return m_renderTarget->mapPixelToCoords(pos.as<int>(), m_view);
         }
 
-        robot2D::vec2f mapPixelToCoords(const robot2D::vec2f& point, robot2D::FrameBuffer::Ptr frameBuffer) const {
+        robot2D::vec2f mapPixelToCoords(const robot2D::vec2f& point,
+                                        robot2D::FrameBuffer::Ptr frameBuffer) const {
             robot2D::vec2f normalized;
             auto port = getViewport(frameBuffer -> getSpecification().size);
             robot2D::FloatRect viewport = {port.lx, port.ly, port.width, port.height};
-            normalized.x       = -1.f + 2.f * (static_cast<float>(point.x) - viewport.lx) / viewport.width;
-            normalized.y       = 1.f - 2.f * (static_cast<float>(point.y) - viewport.ly) / viewport.height;
+            normalized.x = -1.f + 2.f * (static_cast<float>(point.x) - viewport.lx) / viewport.width;
+            normalized.y = 1.f - 2.f * (static_cast<float>(point.y) - viewport.ly) / viewport.height;
 
             // Then transform by the inverse of the view matrix
             return m_view.getInverseTransform().transformPoint(normalized);

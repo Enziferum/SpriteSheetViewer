@@ -29,13 +29,21 @@ namespace viewer {
             return &m_animations[index];
         }
 
+        void removeAll() {
+            m_texturePath = "";
+            m_animations.clear();
+        }
+
         bool empty() const {
             if(m_animations.empty())
                 return true;
             else
                 return !m_animations[0].valid();
         }
+
+        const std::string& getTexturePath() const {return m_texturePath;}
     private:
+        std::string m_texturePath;
         std::vector<Animation> m_animations;
     };
 } // namespace viewer

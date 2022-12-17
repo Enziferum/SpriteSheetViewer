@@ -48,4 +48,13 @@ namespace viewer {
             target.draw(collider);
     }
 
+    ViewerAnimation::ViewerAnimation(const Animation& animation,
+                                     const robot2D::vec2f& worldPos): m_animation{animation} {
+        for(const auto& frame: animation.frames) {
+            auto dd = DebugCollider{};
+            dd.aabb = {worldPos.x + frame.lx, worldPos.y + frame.ly, frame.width, frame.height};
+            m_colliders.emplace_back(dd);
+        }
+    }
+
 } // namespace viewer

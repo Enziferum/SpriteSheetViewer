@@ -16,11 +16,11 @@ namespace viewer {
 
         TiXmlElement* head = new TiXmlElement{headTag};
         head -> SetAttribute("image", "BossWalk.png");
-        for(auto& it: animationList) {
+        for(const auto& anim: animationList) {
             TiXmlElement* animation = new TiXmlElement{animationTag};
-            animation -> SetAttribute("title", it.title.c_str());
-            animation -> SetAttribute("delay", it.delay);
-            for(auto& frame: it.frames) {
+            animation -> SetAttribute("title", anim.title.c_str());
+            animation -> SetAttribute("delay", anim.delay);
+            for(auto& frame: anim.frames) {
                 TiXmlElement* cutElement = new TiXmlElement{"cut"};
                 cutElement -> SetAttribute("x", frame.lx);
                 cutElement -> SetAttribute("y", (frame.ly - realTexturePos.y));

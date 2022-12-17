@@ -14,7 +14,7 @@ namespace viewer {
     class ILoader {
     public:
         virtual ~ILoader() = 0;
-        virtual bool loadFromFile(const std::string& path, AnimationList& animations) = 0;
+        virtual bool loadFromFile(const std::string& path, std::string& texturePath, AnimationList& animations) = 0;
     };
 
     ILoader::~ILoader() {}
@@ -23,7 +23,7 @@ namespace viewer {
     public:
         ~XmlLoader() override = default;
 
-        bool loadFromFile(const std::string& path, AnimationList& animations) override {
+        bool loadFromFile(const std::string& path, std::string& texturePath, AnimationList& animations) override {
             const char* p = path.c_str();
             TiXmlDocument document(p);
             if (!document.LoadFile())
@@ -32,6 +32,8 @@ namespace viewer {
             TiXmlElement* head = document.FirstChildElement(headTag);
             if(!head)
                 return false;
+
+            texturePath = head ->Attribute("image");
 
             TiXmlElement* animation = head -> FirstChildElement(animationTag);
             if(!animation)
@@ -75,7 +77,7 @@ namespace viewer {
     bool SpriteSheet::loadFromFile(const std::string& path) {
 
         auto loader = getLoader();
-        if(!loader || !loader -> loadFromFile(path, m_animations))
+        if(!loader || !loader -> loadFromFile(path, m_texturePath, m_animations))
             return false;
 
         return true;

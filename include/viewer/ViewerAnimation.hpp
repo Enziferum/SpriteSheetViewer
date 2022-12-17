@@ -9,6 +9,7 @@ namespace viewer {
     class ViewerAnimation: public robot2D::Drawable {
     public:
         ViewerAnimation() = default;
+        ViewerAnimation(const Animation& animation, const robot2D::vec2f& worldPos = {});
         ~ViewerAnimation() = default;
 
         std::pair<bool, int> contains(const robot2D::vec2f& point);

@@ -14,6 +14,7 @@
 #include "MessageDispather.hpp"
 #include "Messages.hpp"
 #include "ViewerAnimation.hpp"
+#include "SceneGrid.hpp"
 
 namespace viewer {
 
@@ -24,6 +25,10 @@ namespace viewer {
 //                return *this;
             setSprite(sprite);
             return *this;
+        }
+
+        void setPosition(const robot2D::vec2f& position) {
+            m_sprite.setPosition(position);
         }
 
         void setSprite(const robot2D::Sprite& sprite) {
@@ -67,6 +72,10 @@ namespace viewer {
         void onAddAnimation(const AddAnimationMessage& message);
         void onSwitchAnimation(const SwitchAnimationMessage& message);
         void onDeleteAnimation(const DeleteAnimationMessage& message);
+        void onSaveAnimations(const SaveAnimationsMessage& message);
+
+        void onLoadImage(const LoadImageMessage& message);
+        void onLoadXml(const LoadXmlMessage& message);
 
         void setupResources();
         void setupBindings();
@@ -76,18 +85,19 @@ namespace viewer {
 
         robot2D::RenderWindow* m_window;
 
-        viewer::PanelManager m_panelManager;
-        viewer::Camera2D m_camera2D;
-        viewer::SpriteSheet m_spriteSheet;
-        viewer::SpriteSheetAnimation sheetAnimation;
+        PanelManager m_panelManager;
+        Camera2D m_camera2D;
+        SpriteSheet m_spriteSheet;
+        SpriteSheetAnimation sheetAnimation;
         EventBinder m_eventBinder;
+
+        SceneGrid m_sceneGrid;
 
         robot2D::FrameBuffer::Ptr m_frameBuffer;
 
         robot2D::Texture m_texture;
         robot2D::Sprite m_animatedSprite;
         MovableSprite m_sprite;
-
 
         std::vector<ViewerAnimation> m_animations;
         int m_currentAnimation = -1;

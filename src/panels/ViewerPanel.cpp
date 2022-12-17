@@ -34,7 +34,7 @@ namespace viewer {
         if(!m_animation )
             return;
         auto* render = m_animation -> getAnimationRender();
-        if(!render)
+        if(!render || m_animation -> getFramesCount() == 0)
             return;
 
         auto contentSize = ImGui::GetContentRegionAvail();

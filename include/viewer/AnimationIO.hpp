@@ -34,7 +34,7 @@ namespace viewer {
         bool loadFromFile(const std::string& path);
         bool saveToFile(const std::string& path,
                         const AnimationList& animationList,
-                        robot2D::vec2f realTexturePos);
+                        robot2D::vec2f realTexturePos = {});
     private:
         AnimationList m_animations;
     };

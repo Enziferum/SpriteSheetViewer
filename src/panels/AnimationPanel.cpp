@@ -3,6 +3,7 @@
 #include <viewer/panels/AnimationPanel.hpp>
 #include <viewer/macro.hpp>
 #include <viewer/Messages.hpp>
+#include <viewer/FileDialog.hpp>
 
 namespace viewer {
     namespace {
@@ -127,11 +128,25 @@ namespace viewer {
         return ImGui::InputText(label, (char*)str->c_str(), str->capacity() + 1, flags, InputTextCallback, &cb_user_data);
     }
 
-    AnimationPanel::AnimationPanel(robot2D::MessageBus& messageBus):
+    AnimationPanel::AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher):
         IPanel(typeid(AnimationPanel)),
-        m_messageBus{messageBus} {
+        m_messageBus{messageBus},
+        m_messageDispatcher{messageDispatcher}{
         m_currentName = "New Animation";
         onAdd();
+        m_messageDispatcher.onMessage<bool>(MessageID::AnimationPanelLoadXml, [this](bool) {
+           m_animationNames.clear();
+           m_currentName = "";
+           m_currentAnimation = 0;
+           m_lastCurrentAnimation = 0;
+        });
+
+        m_messageDispatcher.onMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation,
+                                                                 [this](const AnimationPanelLoadMessage& message) {
+            if(m_animationNames.empty())
+                m_currentName = message.name;
+            m_animationNames.emplace_back(message.name);
+        });
     }
 
     void AnimationPanel::update(float dt) {
@@ -220,7 +235,11 @@ namespace viewer {
     }
 
     void AnimationPanel::onSave() {
-
+        std::string&& filePath = viewer::saveFileDialog("SaveAnimation", ".xml", "");
+        if(filePath.empty())
+            return;
+        auto* msg = m_messageBus.postMessage<SaveAnimationsMessage>(MessageID::SaveAnimations);
+        msg -> filePath = std::move(filePath);
     }
 
     void AnimationPanel::onDelete() {

@@ -1,12 +1,13 @@
-#include <robot2D/Util/Logger.hpp>
 #include <viewer/panels/ScenePanel.hpp>
-
 #include <robot2D/imgui/Api.hpp>
+#include <viewer/macro.hpp>
+#include <viewer/Messages.hpp>
 
 namespace viewer {
 
-    ScenePanel::ScenePanel(Camera2D& camera2D):
+    ScenePanel::ScenePanel(robot2D::MessageBus& messageBus, Camera2D& camera2D):
         IPanel(typeid(ScenePanel)),
+        m_messageBus{messageBus},
         m_camera2D{camera2D} {
 
     }
@@ -17,26 +18,6 @@ namespace viewer {
             auto[mx, my] = ImGui::GetMousePos();
             mx -= m_ViewportBounds[0].x;
             my -= m_ViewportBounds[0].y;
-
-            auto pos = ImGui::GetWindowPos();
-            RB_INFO("ScenePanel POS {0}: {1}", pos.x, pos.y);
-
-            lastMousePos = {mx, my};
-            //lastMousePos = m_camera2D.mapPixelToCoords(lastMousePos);
-
-            auto& view = m_camera2D.getCameraView();
-            auto viewportSize = view.getSize();
-            auto viewportCenter = view.getCenter();
-
-            robot2D::FloatRect viewport {viewportCenter.x - viewportSize.x / 2.F,
-                                         viewportCenter.y - viewportSize.y / 2.F,
-                                         viewportSize.x, viewportSize.y};
-
-            RB_INFO("M_VIEWPORT SIZE {0}, {1}", m_ViewportSize.x, m_ViewportSize.y);
-
-            RB_INFO("Camera Viewport {0}, {1}, {2}, {3}", viewport.lx, viewport.ly, viewport.width, viewport.height);
-
-            RB_INFO("Formatted Point by ScenePanel {0}: {1}", lastMousePos.x, lastMousePos.y);
         }
 
         guiRender();
@@ -52,30 +33,40 @@ namespace viewer {
         // ImGuiWindowFlags_NoTitleBar
         windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "##Scene";
-        robot2D::createWindow(windowOptions, [this]() {
+        robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
+    }
 
-            auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-            auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
-            auto viewportOffset = ImGui::GetWindowPos();
-            m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x,
-                                    viewportMinRegion.y + viewportOffset.y };
-            m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
-                                    viewportMaxRegion.y + viewportOffset.y };
+    bool ScenePanel::isMouseOver() const {
+        return m_mouseIsOver;
+    }
 
-            //  m_panelFocused = ImGui::IsWindowFocused();
-            // m_panelHovered = ImGui::IsWindowHovered();
+    void ScenePanel::windowFunction() {
+        checkMouseHover();
 
-            /// TODO: @a.raag switch mode of camera ///
-            auto ViewPanelSize = ImGui::GetContentRegionAvail();
+        auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
+        auto viewportOffset = ImGui::GetWindowPos();
+        m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x,
+                                viewportMinRegion.y + viewportOffset.y };
+        m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
+                                viewportMaxRegion.y + viewportOffset.y };
 
-            if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
-                m_ViewportSize = {ViewPanelSize.x, ViewPanelSize.y};
-                m_framebuffer -> Resize(m_ViewportSize);
-                m_camera2D.resetViewport(m_ViewportSize.as<float>());
-            }
+        //  m_panelFocused = ImGui::IsWindowFocused();
+        // m_panelHovered = ImGui::IsWindowHovered();
 
-            robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());
-        });
+        /// TODO: @a.raag switch mode of camera ///
+        auto ViewPanelSize = ImGui::GetContentRegionAvail();
+
+        if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
+            m_ViewportSize = {ViewPanelSize.x, ViewPanelSize.y};
+            m_framebuffer -> Resize(m_ViewportSize);
+            m_camera2D.resetViewport(m_ViewportSize.as<float>());
+
+            auto* msg = m_messageBus.postMessage<SceneViewportMessage>(MessageID::SceneViewportSize);
+            msg -> newSize = {ViewPanelSize.x, ViewPanelSize.y};
+        }
+
+        robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());
     }
 
 

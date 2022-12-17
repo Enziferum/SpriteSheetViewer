@@ -6,6 +6,14 @@
 namespace viewer {
     struct DebugCollider: public robot2D::Drawable {
 
+        bool notZero() const {
+            return aabb.width > 0 && aabb.height > 0;
+        }
+
+        bool intersects(const robot2D::FloatRect& rect) {
+            return aabb.intersects(rect);
+        }
+
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates states) const override {
             std::array<robot2D::Transform, 4> quads;
             quads[0].translate(aabb.lx, aabb.ly);
