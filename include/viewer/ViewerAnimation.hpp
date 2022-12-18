@@ -16,6 +16,9 @@ namespace viewer {
         DebugCollider& operator[](std::size_t index);
 
         void addFrame(const DebugCollider& collider, const robot2D::vec2f& worldPosition);
+        void addFrame(const DebugCollider& collider);
+
+        void eraseLastFrame();
         void eraseFrame(int index);
 
         const DebugCollider& operator[](std::size_t index) const;
@@ -26,6 +29,7 @@ namespace viewer {
     private:
         Animation m_animation{};
         std::vector<DebugCollider> m_colliders{};
+        robot2D::vec2f m_worldPos{};
     };
 
 } // namespace viewer

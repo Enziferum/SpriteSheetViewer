@@ -15,6 +15,7 @@
 #include "Messages.hpp"
 #include "ViewerAnimation.hpp"
 #include "SceneGrid.hpp"
+#include "CommandStack.hpp"
 
 namespace viewer {
 
@@ -82,7 +83,6 @@ namespace viewer {
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
-
         robot2D::RenderWindow* m_window;
 
         PanelManager m_panelManager;
@@ -90,8 +90,9 @@ namespace viewer {
         SpriteSheet m_spriteSheet;
         SpriteSheetAnimation sheetAnimation;
         EventBinder m_eventBinder;
-
         SceneGrid m_sceneGrid;
+        CommandStack m_commandStack;
+
 
         robot2D::FrameBuffer::Ptr m_frameBuffer;
 

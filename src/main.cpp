@@ -87,10 +87,44 @@ public:
     ~DeleteCommand() override = default;
 };
 
+struct EventBuffer {
+    friend std::ostream& operator<<(std::ostream& os, const EventBuffer& eventBuffer);
+    std::vector<robot2D::Event> m_events;
+};
 
+std::string keyToString(const robot2D::Key& key) {
+    switch (key) {
+        case robot2D::Key::R:
+            return "R";
+        case robot2D::Key::S:
+            return "S";
+        case robot2D::Key::LEFT_CONTROL:
+            return "LEFT_CONTROL";
+        default:
+            return "";
+    }
+}
+
+std::ostream& operator<<(std::ostream& os, const EventBuffer& eventBuffer) {
+    os << "EventBuffer contains events: " << "\n";
+    for(const auto& event: eventBuffer.m_events) {
+        switch(event.type) {
+            case robot2D::Event::KeyPressed: {
+                os << "Event: KeyPressed, Key: " << keyToString(event.key.code) << "\n";
+                break;
+            }
+
+            default:
+                break;
+        }
+    }
+    return os;
+}
 
 class DemoCheck: public robot2D::Application {
 public:
+    EventBuffer m_eventBuffer;
+
     ~DemoCheck() override = default;
 
     void setup() override {
@@ -101,7 +135,7 @@ public:
 
     void handleEvents(const robot2D::Event& event) override {
         if(event.type == robot2D::Event::MouseMoved) {
-            if(robot2D::Window::isMousePressed(robot2D::Mouse::MouseLeft)) {
+            if(robot2D::Window::isMousePressed(robot2D::Mouse::MouseMiddle)) {
 
                 auto mousePos = m_window -> getMousePos();
                 if(lastMousePos == robot2D::vec2f {-1, -1})
@@ -125,12 +159,13 @@ public:
             }
         }
 
-
+        m_eventBuffer.m_events.push_back(event);
+        std::cout << m_eventBuffer << "\n";
     }
 
     void update(float deltaTime) override {
         if(robot2D::Window::isKeyboardPressed(robot2D::Key::Q))
-            quads.clear();
+            std::cout << m_eventBuffer << "\n";
     }
 
     void render() override {

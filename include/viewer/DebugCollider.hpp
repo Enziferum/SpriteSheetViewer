@@ -2,6 +2,7 @@
 
 #include <array>
 #include <robot2D/Graphics/Drawable.hpp>
+#include <robot2D/Graphics/RenderTarget.hpp>
 
 namespace viewer {
     struct DebugCollider: public robot2D::Drawable {

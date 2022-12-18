@@ -7,10 +7,11 @@
 #include <viewer/panels/ViewerPanel.hpp>
 #include <viewer/panels/ScenePanel.hpp>
 #include <viewer/panels/AnimationPanel.hpp>
+
 #include <viewer/macro.hpp>
 #include <viewer/utils.hpp>
 
-#include <viewer/Quad.hpp>
+#include <viewer/commands/AddFrameCommand.hpp>
 
 #include <GLFW/glfw3.h>
 #include <filesystem>
@@ -60,20 +61,6 @@ namespace viewer {
     m_window{nullptr} {}
 
     void ViewerScene::setupResources() {
-/*        auto& textureSize = m_texture.getSize();
-        m_animatedSprite.setTexture(m_texture);
-
-        auto&& bounds = m_animatedSprite.getGlobalBounds();
-        auto windowSize = m_window -> getSize();
-
-        robot2D::vec2f spritePosition = {
-            windowSize.x / 2.F - bounds.width / 2.F,
-            windowSize.y / 2.F - bounds.height / 2.F
-        };
-
-        m_animatedSprite.setPosition(spritePosition);
-
-        //m_sprite = m_animatedSprite;*/
         sheetAnimation.setAnimationRender( m_animatedSprite);
 
         auto& viewer = m_panelManager.getPanel<ViewerPanel>();
@@ -299,6 +286,7 @@ namespace viewer {
                 auto dd = viewer::DebugCollider{};
                 dd.aabb = movingAABB;
                 if(dd.notZero() && dd.intersects(m_animatedSprite.getGlobalBounds())) {
+                    m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
                     m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
                 }
             }
@@ -316,7 +304,9 @@ namespace viewer {
     enum class KeyAction {
         FlipLeft,
         FlipRight,
-        DeleteFrame
+        DeleteFrame,
+        Undo,
+        Redo
     };
 
     void ViewerScene::onKeyboardPressed(const robot2D::Event& event) {
@@ -324,7 +314,9 @@ namespace viewer {
         std::unordered_map<KeyAction, robot2D::Key> m_inputMap = {
                 {KeyAction::FlipLeft, robot2D::Key::A},
                 {KeyAction::FlipRight, robot2D::Key::D},
-                {KeyAction::DeleteFrame, robot2D::Key::DEL}
+                {KeyAction::DeleteFrame, robot2D::Key::DEL},
+                {KeyAction::Undo, robot2D::Key::Z},
+                {KeyAction::Redo, robot2D::Key::R},
         };
 
         if(event.key.code == m_inputMap[KeyAction::FlipLeft]) {
@@ -344,6 +336,14 @@ namespace viewer {
                 updateAABBit = -1;
                 movingAABB = {};
             }
+        }
+
+        if(event.key.code == m_inputMap[KeyAction::Undo]) {
+            m_commandStack.undo();
+        }
+
+        if(event.key.code == m_inputMap[KeyAction::Redo]) {
+            m_commandStack.redo();
         }
     }
 

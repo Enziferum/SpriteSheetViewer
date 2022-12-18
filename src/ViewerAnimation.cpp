@@ -16,6 +16,7 @@ namespace viewer {
 
     void ViewerAnimation::addFrame(const DebugCollider& collider,
                                    const robot2D::vec2f& worldPosition) {
+        m_worldPos = worldPosition;
         m_colliders.emplace_back(collider);
         robot2D::FloatRect convertedFrame {
                 collider.aabb.lx - worldPosition.x,
@@ -55,6 +56,23 @@ namespace viewer {
             dd.aabb = {worldPos.x + frame.lx, worldPos.y + frame.ly, frame.width, frame.height};
             m_colliders.emplace_back(dd);
         }
+    }
+
+    void ViewerAnimation::addFrame(const DebugCollider& collider) {
+        m_colliders.emplace_back(collider);
+        robot2D::FloatRect convertedFrame {
+                collider.aabb.lx - m_worldPos.x,
+                collider.aabb.ly - m_worldPos.y,
+                collider.aabb.width,
+                collider.aabb.height
+        };
+        m_animation.addFrame(convertedFrame);
+    }
+
+    void ViewerAnimation::eraseLastFrame() {
+        m_animation.frames.pop_back();
+        m_animation.flip_frames.pop_back();
+        m_colliders.pop_back();
     }
 
 } // namespace viewer
