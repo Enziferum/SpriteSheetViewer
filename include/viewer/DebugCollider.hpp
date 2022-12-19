@@ -4,6 +4,8 @@
 #include <robot2D/Graphics/Drawable.hpp>
 #include <robot2D/Graphics/RenderTarget.hpp>
 
+#include "Quad.hpp"
+
 namespace viewer {
     struct DebugCollider: public robot2D::Drawable {
 
@@ -34,13 +36,32 @@ namespace viewer {
                 states.color = borderColor;
                 target.draw(states);
             }
+
+            if(showMovePoints) {
+                std::array<Quad, 2> moveQ;
+
+                constexpr robot2D::vec2f qSize = {6, 6};
+
+                moveQ[0].position = {aabb.lx - qSize.x / 2.F, aabb.ly - qSize.y / 2.F};
+                moveQ[0].size = qSize;
+                moveQ[0].color = robot2D::Color::Cyan;
+
+                moveQ[1].position = {
+                        aabb.lx + aabb.width - qSize.x / 2.F,
+                        aabb.ly + aabb.height - qSize.y / 2.F
+                };
+                moveQ[1].size = qSize;
+                moveQ[1].color = robot2D::Color::Cyan;
+
+                for(const auto& q: moveQ)
+                    target.draw(q);
+            }
         }
 
         float borderSize = 1.F;
         robot2D::FloatRect aabb;
         robot2D::Color borderColor = robot2D::Color::Green;
-    private:
-        mutable std::array<robot2D::Transform, 4> m_quads;
+        bool showMovePoints = {false};
     };
 
 }

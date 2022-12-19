@@ -75,4 +75,16 @@ namespace viewer {
         m_colliders.pop_back();
     }
 
+    void ViewerAnimation::addFrame(const DebugCollider& collider, std::size_t index) {
+        m_colliders.insert(m_colliders.begin() + index, collider);
+        robot2D::IntRect convertedFrame {
+                collider.aabb.lx - m_worldPos.x,
+                collider.aabb.ly - m_worldPos.y,
+                collider.aabb.width,
+                collider.aabb.height
+        };
+        m_animation.frames.insert(m_animation.frames.begin() + index, convertedFrame);
+        m_animation.flip_frames.insert(m_animation.frames.begin() + index, convertedFrame);
+    }
+
 } // namespace viewer

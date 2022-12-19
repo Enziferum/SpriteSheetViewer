@@ -12,6 +12,7 @@
 #include <viewer/utils.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
+#include <viewer/commands/DeleteFrameCommand.hpp>
 
 #include <GLFW/glfw3.h>
 #include <filesystem>
@@ -93,6 +94,9 @@ namespace viewer {
 
                 movingAABB.width = movePos.x - movingAABB.lx;
                 movingAABB.height = movePos.y - movingAABB.ly;
+
+                if(updateAABBit >= 0)
+                    m_animations[m_currentAnimation][updateAABBit].aabb = movingAABB;
             }
         });
 
@@ -217,8 +221,8 @@ namespace viewer {
         if(collisionPair.first && collisionPair.second != -1) {
             movingAABB = m_animations[m_currentAnimation][collisionPair.second].aabb;
             if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
-                movingAABB.lx = convertedPoint.x;
-                movingAABB.ly = convertedPoint.y;
+                startedPressed = true;
+                m_animations[m_currentAnimation][collisionPair.second].showMovePoints = true;
             }
             else if(event.mouse.btn == robot2D::Mouse::MouseRight) {
                 m_animations[m_currentAnimation][collisionPair.second].borderColor = robot2D::Color::Magenta;
@@ -292,6 +296,7 @@ namespace viewer {
             }
         } else {
             m_animations[m_currentAnimation][updateAABBit].aabb = movingAABB;
+            m_animations[m_currentAnimation][updateAABBit].showMovePoints = false;
         }
 
         startedPressed = false;
@@ -331,6 +336,12 @@ namespace viewer {
 
         if(event.key.code == m_inputMap[KeyAction::DeleteFrame]) {
             if(updateAABBit != -1) {
+                m_commandStack.addCommand<DeleteFrameCommand>(
+                        m_animations[m_currentAnimation],
+                        m_animations[m_currentAnimation][updateAABBit],
+                        updateAABBit
+                );
+                m_animations[m_currentAnimation][updateAABBit].borderColor = robot2D::Color::Green;
                 m_animations[m_currentAnimation].eraseFrame(updateAABBit);
 
                 updateAABBit = -1;

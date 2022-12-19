@@ -17,6 +17,7 @@ namespace viewer {
 
         void addFrame(const DebugCollider& collider, const robot2D::vec2f& worldPosition);
         void addFrame(const DebugCollider& collider);
+        void addFrame(const DebugCollider& collider, std::size_t index);
 
         void eraseLastFrame();
         void eraseFrame(int index);
