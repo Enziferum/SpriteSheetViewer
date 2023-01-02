@@ -14,13 +14,13 @@ namespace viewer {
 
         }
 
-        AddFrameCommand(ViewerAnimation& viewerAnimation, DebugCollider& debugCollider);
+        AddFrameCommand(ViewerAnimation& viewerAnimation, DebugCollider debugCollider);
         virtual ~AddFrameCommand() override = default;
 
         void undo() override;
         void redo() override;
     private:
         ViewerAnimation& m_viewerAnimation;
-        DebugCollider& m_debugCollider;
+        DebugCollider m_debugCollider;
     };
 } // namespace viewer

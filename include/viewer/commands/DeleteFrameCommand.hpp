@@ -12,6 +12,7 @@ namespace viewer {
         ~DeleteFrameCommand() override = default;
 
         void undo() override;
+        void redo() override;
     private:
         ViewerAnimation& m_viewerAnimation;
         DebugCollider& m_debugCollider;
