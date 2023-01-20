@@ -1,9 +1,10 @@
+#include <utility>
 #include <viewer/commands/DeleteFrameCommand.hpp>
 
 namespace viewer {
     DeleteFrameCommand::DeleteFrameCommand(
             ViewerAnimation& viewerAnimation,
-            DebugCollider& debugCollider,
+            DebugCollider debugCollider,
             std::size_t index):
             m_viewerAnimation{viewerAnimation},
             m_debugCollider{debugCollider},
@@ -14,6 +15,6 @@ namespace viewer {
     }
 
     void DeleteFrameCommand::redo() {
-        m_viewerAnimation.addFrame(m_debugCollider, m_index);
+       // m_viewerAnimation.addFrame(m_debugCollider, m_index);
     }
 } // namespace viewer

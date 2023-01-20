@@ -7,7 +7,7 @@ namespace viewer {
     class DeleteFrameCommand: public ICommand {
     public:
         DeleteFrameCommand(ViewerAnimation& viewerAnimation,
-                           DebugCollider& debugCollider,
+                           DebugCollider debugCollider,
                            std::size_t index);
         ~DeleteFrameCommand() override = default;
 
@@ -15,7 +15,7 @@ namespace viewer {
         void redo() override;
     private:
         ViewerAnimation& m_viewerAnimation;
-        DebugCollider& m_debugCollider;
+        DebugCollider m_debugCollider;
         std::size_t m_index;
     };
 } // namespace viewer

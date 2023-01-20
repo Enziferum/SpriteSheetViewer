@@ -10,6 +10,7 @@
 
 #include <viewer/macro.hpp>
 #include <viewer/utils.hpp>
+#include <viewer/SpriteCutter.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
 #include <viewer/commands/DeleteFrameCommand.hpp>
@@ -18,6 +19,22 @@
 #include <filesystem>
 
 namespace viewer {
+
+    namespace {
+        void applyImageMask(robot2D::Image& image, robot2D::Color imageMask) {
+            auto colorFormat = image.getColorFormat();
+            assert(colorFormat == robot2D::ImageColorFormat::RGBA && "Avalable apply image mask only to RGBA color format");
+            auto* buffer = image.getBuffer();
+            assert(buffer != nullptr && "Load image before apply mask");
+            const auto& size = image.getSize();
+
+            for(int i = 0; i < static_cast<int>(size.x * size.y * 4); i += 4) {
+                if(buffer[i] == imageMask.red && buffer[i + 1] == imageMask.green && buffer[i + 2] == imageMask.blue) {
+                    buffer[i + 3] = 0;
+                }
+            }
+        }
+    }
 
     namespace fs = std::filesystem;
 
@@ -237,50 +254,6 @@ namespace viewer {
         }
     }
 
-
-    std::vector<robot2D::FloatRect> boundingAABB(const robot2D::FloatRect& region,
-                                                 const std::vector<robot2D::Color>& colors) {
-        std::vector<robot2D::FloatRect> aabbs;
-
-        float leftX, rightX, bottomY, topY;
-        leftX = region.lx;
-        bottomY = region.ly;
-        rightX = region.lx + region.width;
-        topY = region.ly + region.height;
-
-        auto isWhite = [](const robot2D::Color& color) {
-            return color.red == 255 && color.green == 255 && color.blue == 255 && color.alpha == 255;
-        };
-
-        for(int i = 0; i < region.width; ++i) {
-            for(int j = 0; j < region.height; ++j) {
-                if(isWhite(colors[i + j * region.height])) {
-                   ++leftX;
-                   ++bottomY;
-                }
-                else {
-                    break;
-                }
-            }
-        }
-
-        for(int i = region.width; i > 0; --i) {
-            for(int j = region.height; j > 0 ; --j) {
-                if(isWhite(colors[i + j * region.height])) {
-                    --rightX;
-                    --topY;
-                }
-                else {
-                    break;
-                }
-            }
-        }
-
-        aabbs.emplace_back(robot2D::FloatRect{leftX, bottomY, rightX, topY});
-
-        return aabbs;
-    }
-
     void ViewerScene::onMouseReleased(const robot2D::Event& event) {
 //        if(m_panelManager.isMouseIsOver())
 //            return;
@@ -290,8 +263,22 @@ namespace viewer {
                 auto dd = viewer::DebugCollider{};
                 dd.aabb = movingAABB;
                 if(dd.notZero() && dd.intersects(m_animatedSprite.getGlobalBounds())) {
-                    m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
-                    m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
+                    auto&& frames = SpriteCutter{}.cutFrames(
+                            {movingAABB.lx, movingAABB.ly, movingAABB.width, movingAABB.height},
+                            const_cast<robot2D::Texture &>(*m_animatedSprite.getTexture()),
+                            m_animatedSprite.getPosition()
+                    );
+
+                    frames.erase(
+                            std::unique(frames.begin(), frames.end()),
+                            frames.end());
+                    std::sort(frames.begin(), frames.end());
+
+                    for(const auto& frame: frames) {
+                        dd.aabb = {frame.lx, frame.ly, frame.width, frame.height};
+                        m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
+                        m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
+                    }
                 }
             }
         } else {
@@ -311,50 +298,69 @@ namespace viewer {
         FlipRight,
         DeleteFrame,
         Undo,
-        Redo
+        Redo,
+        Transparent
+    };
+
+    static std::unordered_map<KeyAction, robot2D::Key> m_inputMap = {
+            {KeyAction::FlipLeft, robot2D::Key::A},
+            {KeyAction::FlipRight, robot2D::Key::D},
+            {KeyAction::DeleteFrame, robot2D::Key::DEL},
+            {KeyAction::Undo, robot2D::Key::Z},
+            {KeyAction::Redo, robot2D::Key::R},
+            {KeyAction::Transparent, robot2D::Key::T},
     };
 
     void ViewerScene::onKeyboardPressed(const robot2D::Event& event) {
 
-        std::unordered_map<KeyAction, robot2D::Key> m_inputMap = {
-                {KeyAction::FlipLeft, robot2D::Key::A},
-                {KeyAction::FlipRight, robot2D::Key::D},
-                {KeyAction::DeleteFrame, robot2D::Key::DEL},
-                {KeyAction::Undo, robot2D::Key::Z},
-                {KeyAction::Redo, robot2D::Key::R},
-        };
-
         if(event.key.code == m_inputMap[KeyAction::FlipLeft]) {
             sheetAnimation.reset();
             sheetAnimation.setFlip(false);
+            return;
         }
 
         if(event.key.code == m_inputMap[KeyAction::FlipRight]) {
             sheetAnimation.reset();
             sheetAnimation.setFlip(true);
+            return;
         }
 
         if(event.key.code == m_inputMap[KeyAction::DeleteFrame]) {
             if(updateAABBit != -1) {
+                auto frame = m_animations[m_currentAnimation][updateAABBit];
+                m_animations[m_currentAnimation].eraseFrame(updateAABBit);
+
+                frame.borderColor = robot2D::Color::Green;
                 m_commandStack.addCommand<DeleteFrameCommand>(
                         m_animations[m_currentAnimation],
-                        m_animations[m_currentAnimation][updateAABBit],
+                        frame,
                         updateAABBit
                 );
-                m_animations[m_currentAnimation][updateAABBit].borderColor = robot2D::Color::Green;
-                m_animations[m_currentAnimation].eraseFrame(updateAABBit);
 
                 updateAABBit = -1;
                 movingAABB = {};
+                return;
             }
         }
 
         if(event.key.code == m_inputMap[KeyAction::Undo]) {
             m_commandStack.undo();
+            return;
         }
 
         if(event.key.code == m_inputMap[KeyAction::Redo]) {
             m_commandStack.redo();
+            return;
+        }
+
+        if(event.key.code == m_inputMap[KeyAction::Transparent]) {
+            auto mousePos = m_camera2D.mapPixelToCoords(m_window -> getMousePos(), m_frameBuffer);
+            auto&& maskColor = readPixel({mousePos.x, m_window -> getSize().y - mousePos.y});
+            robot2D::Image image{};
+            image.create(m_texture.getSize(), m_texture.getPixels(), robot2D::ImageColorFormat::RGBA);
+            applyImageMask(image, maskColor);
+            m_texture.create(image);
+            return;
         }
     }
 

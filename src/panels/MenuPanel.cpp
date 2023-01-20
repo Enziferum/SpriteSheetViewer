@@ -32,7 +32,7 @@ namespace viewer {
 
             auto fspath = fs::path{path};
             if(fs::is_regular_file(fspath)) {
-                if(fspath.extension() == ".png") {
+                if(fspath.extension() == ".png" || ".PNG") {
                     auto* msg = m_messageBus.postMessage<LoadImageMessage>(MessageID::LoadImage);
                     msg -> filePath = std::move(path);
                 }
