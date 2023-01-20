@@ -3,7 +3,7 @@
 namespace viewer {
 
     AddFrameCommand::AddFrameCommand(ViewerAnimation& viewerAnimation,
-                                     DebugCollider debugCollider):
+                                     Collider debugCollider):
         m_viewerAnimation{viewerAnimation},
         m_debugCollider{debugCollider}
         {

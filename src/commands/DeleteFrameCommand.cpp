@@ -4,7 +4,7 @@
 namespace viewer {
     DeleteFrameCommand::DeleteFrameCommand(
             ViewerAnimation& viewerAnimation,
-            DebugCollider debugCollider,
+            Collider debugCollider,
             std::size_t index):
             m_viewerAnimation{viewerAnimation},
             m_debugCollider{debugCollider},

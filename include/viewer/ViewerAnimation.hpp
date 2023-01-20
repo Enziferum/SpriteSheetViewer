@@ -3,7 +3,7 @@
 #include <robot2D/Graphics/Drawable.hpp>
 
 #include "Animation.hpp"
-#include "DebugCollider.hpp"
+#include "Collider.hpp"
 
 namespace viewer {
     class ViewerAnimation: public robot2D::Drawable {
@@ -13,23 +13,23 @@ namespace viewer {
         ~ViewerAnimation() = default;
 
         std::pair<bool, int> contains(const robot2D::vec2f& point);
-        DebugCollider& operator[](std::size_t index);
+        Collider& operator[](std::size_t index);
 
-        void addFrame(const DebugCollider& collider, const robot2D::vec2f& worldPosition);
-        void addFrame(const DebugCollider& collider);
-        void addFrame(const DebugCollider& collider, std::size_t index);
+        void addFrame(const Collider& collider, const robot2D::vec2f& worldPosition);
+        void addFrame(const Collider& collider);
+        void addFrame(const Collider& collider, std::size_t index);
 
         void eraseLastFrame();
         void eraseFrame(int index);
 
-        const DebugCollider& operator[](std::size_t index) const;
+        const Collider& operator[](std::size_t index) const;
         Animation& getAnimation();
         const Animation& getAnimation() const;
 
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates) const override;
     private:
         Animation m_animation{};
-        std::vector<DebugCollider> m_colliders{};
+        std::vector<Collider> m_colliders{};
         robot2D::vec2f m_worldPos{};
     };
 

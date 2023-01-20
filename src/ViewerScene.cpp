@@ -12,9 +12,6 @@
 #include <viewer/utils.hpp>
 #include <viewer/SpriteCutter.hpp>
 
-#include <viewer/commands/AddFrameCommand.hpp>
-#include <viewer/commands/DeleteFrameCommand.hpp>
-
 #include <GLFW/glfw3.h>
 #include <filesystem>
 
@@ -74,13 +71,17 @@ namespace viewer {
 
 
     ViewerScene::ViewerScene(robot2D::MessageBus& messageBus, MessageDispatcher& dispatcher):
+    m_window{nullptr},
     m_messageBus{messageBus},
     m_messageDispatcher{dispatcher},
-    m_window{nullptr} {}
+    m_Manager(messageBus, dispatcher)
+     {}
+
 
     void ViewerScene::setupResources() {
-        sheetAnimation.setAnimationRender( m_animatedSprite);
 
+
+        auto* sheetAnimation = m_View.getAnimation();
         auto& viewer = m_panelManager.getPanel<ViewerPanel>();
         viewer.setSpriteSheetAnimation(&sheetAnimation);
         auto& animation = m_panelManager.getPanel<AnimationPanel>();
@@ -97,12 +98,12 @@ namespace viewer {
         m_eventBinder.bindEvent(robot2D::Event::Resized, [this](const robot2D::Event& event) {
             RB_INFO("New Size = {0} and {1}", event.size.widht, event.size.heigth);
             m_window -> resize({event.size.widht, event.size.heigth});
-            m_camera2D.resetViewport({event.size.widht, event.size.heigth});
-            m_frameBuffer -> Resize({event.size.widht, event.size.heigth});
+  //          m_camera2D.resetViewport({event.size.widht, event.size.heigth});
+    //        m_frameBuffer -> Resize({event.size.widht, event.size.heigth});
         });
 
         m_eventBinder.bindEvent(robot2D::Event::MouseMoved, [this](const robot2D::Event& event) {
-            if(startedPressed) {
+            if(m_leftMousePressed) {
                 robot2D::vec2f movePos{event.move.x, event.move.y};
 
                 auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
@@ -112,8 +113,8 @@ namespace viewer {
                 movingAABB.width = movePos.x - movingAABB.lx;
                 movingAABB.height = movePos.y - movingAABB.ly;
 
-                if(updateAABBit >= 0)
-                    m_animations[m_currentAnimation][updateAABBit].aabb = movingAABB;
+                if(updateIndex >= 0)
+                    m_animations[m_currentAnimation][updateIndex].setRect(movingAABB);
             }
         });
 
@@ -128,23 +129,6 @@ namespace viewer {
         dragObserver.addObserver([](const std::string& path, DragObserver::FileType fileType) {
             //TODO(a.raag): loading file async
         });
-
-        m_messageDispatcher.onMessage<AddAnimationMessage>(MessageID::AddAnimation,
-                                                           BIND_CLASS_FN(onAddAnimation));
-
-        m_messageDispatcher.onMessage<SwitchAnimationMessage>(MessageID::SwitchAnimation,
-                                                           BIND_CLASS_FN(onSwitchAnimation));
-
-
-        m_messageDispatcher.onMessage<SaveAnimationsMessage>(MessageID::SaveAnimations,
-                                                              BIND_CLASS_FN(onSaveAnimations));
-
-        m_messageDispatcher.onMessage<DeleteAnimationMessage>(MessageID::DeleteAnimation,
-                                                              BIND_CLASS_FN(onDeleteAnimation));
-
-        m_messageDispatcher.onMessage<LoadImageMessage>(MessageID::LoadImage, BIND_CLASS_FN(onLoadImage));
-
-        m_messageDispatcher.onMessage<LoadXmlMessage>(MessageID::LoadXml, BIND_CLASS_FN(onLoadXml));
     }
 
     void ViewerScene::setup(robot2D::RenderWindow* window) {
@@ -156,18 +140,12 @@ namespace viewer {
         auto winSize = m_window -> getSize();
         m_camera2D.resetViewport(winSize.as<float>());
 
-
-        robot2D::FrameBufferSpecification frameBufferSpecification;
-        frameBufferSpecification.attachments =  {
-                robot2D::FrameBufferTextureFormat::RGBA8
-        };
-        frameBufferSpecification.size = winSize.as<int>();
-        m_frameBuffer = robot2D::FrameBuffer::Create(frameBufferSpecification);
-
         m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_camera2D);
         m_panelManager.getPanel<ScenePanel>().setFramebuffer(m_frameBuffer);
         setupResources();
         setupBindings();
+
+        m_Manager.setupMessages();
 
         m_camera2D.setRenderTarget(m_window);
 
@@ -187,35 +165,16 @@ namespace viewer {
     }
 
     void ViewerScene::update(float dt) {
-        sheetAnimation.update(dt);
+        m_View.update(dt);
         m_panelManager.update(dt);
+
         m_camera2D.update(dt, m_window);
     }
 
     void ViewerScene::render() {
-        m_frameBuffer -> Bind();
-        m_window -> clear(robot2D::Color::White);
-
-        m_sceneGrid.render(m_camera2D.getCameraView(), m_window->getSize());
-
-        m_window -> beforeRender();
-        m_window -> setView(m_camera2D.getCameraView());
-
-        m_window -> draw(m_sprite);
-        if(m_currentAnimation >= 0)
-            m_window -> draw(m_animations[m_currentAnimation]);
-
-        if(startedPressed) {
-            viewer::DebugCollider debugCollider;
-            debugCollider.aabb = movingAABB;
-            debugCollider.borderColor = selectColor;
-            m_window -> draw(debugCollider);
-        }
-
-        m_window -> afterRender();
-        m_panelManager.render();
-        m_frameBuffer -> unBind();
+        m_window -> draw(m_View);
     }
+
 
     void ViewerScene::onMousePressed(const robot2D::Event& event) {
 //        if(m_panelManager.isMouseIsOver())
@@ -234,11 +193,11 @@ namespace viewer {
             collisionPair = m_animations[m_currentAnimation].contains(convertedPoint.as<float>());
         }
 
-        updateAABBit = collisionPair.second;
+        updateIndex = collisionPair.second;
         if(collisionPair.first && collisionPair.second != -1) {
-            movingAABB = m_animations[m_currentAnimation][collisionPair.second].aabb;
+            movingAABB = m_animations[m_currentAnimation][collisionPair.second].getRect();
             if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
-                startedPressed = true;
+                m_leftMousePressed = true;
                 m_animations[m_currentAnimation][collisionPair.second].showMovePoints = true;
             }
             else if(event.mouse.btn == robot2D::Mouse::MouseRight) {
@@ -247,7 +206,7 @@ namespace viewer {
         }
         else {
             if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
-                startedPressed = true;
+                m_leftMousePressed = true;
                 movingAABB.lx = convertedPoint.x;
                 movingAABB.ly = convertedPoint.y;
             }
@@ -258,10 +217,10 @@ namespace viewer {
 //        if(m_panelManager.isMouseIsOver())
 //            return;
 
-        if(updateAABBit == -1) {
+        if(updateIndex == -1) {
             if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
-                auto dd = viewer::DebugCollider{};
-                dd.aabb = movingAABB;
+                auto dd = viewer::Collider{};
+                dd.setRect(movingAABB);
                 if(dd.notZero() && dd.intersects(m_animatedSprite.getGlobalBounds())) {
                     auto&& frames = SpriteCutter{}.cutFrames(
                             {movingAABB.lx, movingAABB.ly, movingAABB.width, movingAABB.height},
@@ -275,21 +234,21 @@ namespace viewer {
                     std::sort(frames.begin(), frames.end());
 
                     for(const auto& frame: frames) {
-                        dd.aabb = {frame.lx, frame.ly, frame.width, frame.height};
+                        dd.setRect({frame.lx, frame.ly, frame.width, frame.height});
                         m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
                         m_animations[m_currentAnimation].addFrame(dd, m_animatedSprite.getPosition());
                     }
                 }
             }
         } else {
-            m_animations[m_currentAnimation][updateAABBit].aabb = movingAABB;
-            m_animations[m_currentAnimation][updateAABBit].showMovePoints = false;
+            m_animations[m_currentAnimation][updateIndex].setRect(movingAABB);
+            m_animations[m_currentAnimation][updateIndex].showMovePoints = false;
         }
 
-        startedPressed = false;
+        m_leftMousePressed = false;
         if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
             movingAABB = {};
-            updateAABBit = -1;
+            updateIndex = -1;
         }
     }
 
@@ -326,34 +285,39 @@ namespace viewer {
         }
 
         if(event.key.code == m_inputMap[KeyAction::DeleteFrame]) {
-            if(updateAABBit != -1) {
-                auto frame = m_animations[m_currentAnimation][updateAABBit];
-                m_animations[m_currentAnimation].eraseFrame(updateAABBit);
 
-                frame.borderColor = robot2D::Color::Green;
-                m_commandStack.addCommand<DeleteFrameCommand>(
-                        m_animations[m_currentAnimation],
-                        frame,
-                        updateAABBit
-                );
+            m_Manager.deleteFrame();
 
-                updateAABBit = -1;
-                movingAABB = {};
-                return;
-            }
+//            if(updateIndex != -1) {
+//                auto frame = m_animations[m_currentAnimation][updateIndex];
+//                m_animations[m_currentAnimation].eraseFrame(updateIndex);
+//
+//                frame.borderColor = robot2D::Color::Green;
+//                m_commandStack.addCommand<DeleteFrameCommand>(
+//                        m_animations[m_currentAnimation],
+//                        frame,
+//                        updateIndex
+//                );
+//
+//                updateIndex = -1;
+//                movingAABB = {};
+//                return;
+//            }
         }
 
         if(event.key.code == m_inputMap[KeyAction::Undo]) {
-            m_commandStack.undo();
+            m_Manager.undo();
             return;
         }
 
         if(event.key.code == m_inputMap[KeyAction::Redo]) {
-            m_commandStack.redo();
+            m_Manager.redo();
             return;
         }
 
         if(event.key.code == m_inputMap[KeyAction::Transparent]) {
+            m_View.processImage();
+
             auto mousePos = m_camera2D.mapPixelToCoords(m_window -> getMousePos(), m_frameBuffer);
             auto&& maskColor = readPixel({mousePos.x, m_window -> getSize().y - mousePos.y});
             robot2D::Image image{};
@@ -365,118 +329,4 @@ namespace viewer {
     }
 
 
-    void ViewerScene::onAddAnimation(const AddAnimationMessage& message) {
-        ViewerAnimation viewerAnimation{};
-        viewerAnimation.getAnimation().title = message.name;
-        m_animations.emplace_back(std::move(viewerAnimation));
-        m_currentAnimation = m_animations.size() - 1;
-
-        auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
-        auto& animationPanel = m_panelManager.getPanel<AnimationPanel>();
-        auto* sheet = viewerPanel.getSpriteSheetAnimation();
-        if(sheet)
-            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
-    }
-
-    void ViewerScene::onSaveAnimations(const SaveAnimationsMessage& message) {
-        AnimationIO animationIo{};
-        AnimationList animations;
-        for(const auto& animation: m_animations)
-            animations.emplace_back(animation.getAnimation());
-        if(!animationIo.saveToFile(message.filePath, animations)) {
-            RB_ERROR("Can't save animation");
-        }
-    }
-
-    void ViewerScene::onDeleteAnimation(const DeleteAnimationMessage& message) {
-        assert(message.deleteIndex < m_animations.size());
-        m_animations.erase(m_animations.begin() + message.deleteIndex);
-        m_currentAnimation = message.switchToIndex;
-
-        auto& panel = m_panelManager.getPanel<ViewerPanel>();
-        auto* sheet = panel.getSpriteSheetAnimation();
-        if(sheet)
-            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
-    }
-
-    void ViewerScene::onSwitchAnimation(const SwitchAnimationMessage& message) {
-        m_currentAnimation = message.indexTo;
-        auto& panel = m_panelManager.getPanel<ViewerPanel>();
-        auto* sheet = panel.getSpriteSheetAnimation();
-        if(sheet)
-            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
-    }
-
-    void ViewerScene::onLoadImage(const LoadImageMessage& message) {
-        if(!m_texture.loadFromFile(message.filePath)) {
-            RB_ERROR("Can't load texture by path: {0}", message.filePath);
-            return;
-        }
-
-        auto& textureSize = m_texture.getSize();
-        m_animatedSprite.setTexture(m_texture, {0, 0,
-                                                static_cast<int>(textureSize.x),
-                                                static_cast<int>(textureSize.y)});
-
-        auto&& bounds = m_animatedSprite.getGlobalBounds();
-        auto windowSize = m_frameBuffer -> getSpecification().size;
-
-        robot2D::vec2f spritePosition = {
-                windowSize.x / 2.F - bounds.width / 2.F,
-                windowSize.y / 2.F - bounds.height / 2.F
-        };
-
-        m_animatedSprite.setPosition(spritePosition);
-        m_sprite = m_animatedSprite;
-    }
-
-    void ViewerScene::onLoadXml(const LoadXmlMessage& message) {
-        m_currentAnimation = 0;
-        m_animations.clear();
-        sheetAnimation.reset();
-        m_spriteSheet.removeAll();
-
-        if(!m_spriteSheet.loadFromFile(message.filePath)) {
-            RB_ERROR("Can't load sprite sheet by path: {0}", message.filePath);
-            return;
-        }
-
-        fs::path path{message.filePath};
-        path.remove_filename();
-        path.assign(m_spriteSheet.getTexturePath());
-
-        if(!m_texture.loadFromFile(path.string())) {
-            RB_ERROR("Can't load texture by path: {0}", message.filePath);
-            return;
-        }
-
-        auto& textureSize = m_texture.getSize();
-        m_animatedSprite.setTexture(m_texture, {0, 0,
-                                                static_cast<int>(textureSize.x),
-                                                static_cast<int>(textureSize.y)});
-
-        auto&& bounds = m_animatedSprite.getGlobalBounds();
-        auto windowSize = m_frameBuffer -> getSpecification().size;
-
-        robot2D::vec2f spritePosition = {
-                windowSize.x / 2.F - bounds.width / 2.F,
-                windowSize.y / 2.F - bounds.height / 2.F
-        };
-
-        m_animatedSprite.setPosition(spritePosition);
-        m_sprite = m_animatedSprite;
-
-        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
-        for(const auto& animation: m_spriteSheet.getAnimations()) {
-            m_animations.emplace_back(ViewerAnimation{animation, spritePosition});
-            auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
-            msg -> name = animation.title;
-        }
-
-        auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
-        auto& animationPanel = m_panelManager.getPanel<AnimationPanel>();
-        auto* sheet = viewerPanel.getSpriteSheetAnimation();
-        if(sheet)
-            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
-    }
 }

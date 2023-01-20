@@ -3,7 +3,7 @@
 
 #include <stack>
 #include <viewer/Quad.hpp>
-#include <viewer/DebugCollider.hpp>
+#include <viewer/Collider.hpp>
 #include <viewer/utils.hpp>
 #include <viewer/Camera2D.hpp>
 
@@ -261,8 +261,8 @@ public:
     void render() override;
 private:
     robot2D::Texture m_texture;
-    viewer::DebugCollider m_movingQuad;
-    std::vector<viewer::DebugCollider> m_colliders;
+    viewer::Collider m_movingQuad;
+    std::vector<viewer::Collider> m_colliders;
     bool m_leftBtnPressed{false};
     viewer::Camera2D m_camera;
 };
@@ -379,8 +379,11 @@ void SpriteSheetClipper::handleEvents(const robot2D::Event& event) {
     if(event.type == robot2D::Event::MouseMoved) {
         if(m_leftBtnPressed) {
             auto movePos = m_window -> mapPixelToCoords({event.move.x, event.move.y}, m_camera.getCameraView());
-            m_movingQuad.aabb.width = movePos.x - m_movingQuad.aabb.lx;
-            m_movingQuad.aabb.height = movePos.y - m_movingQuad.aabb.ly;
+            auto pos = m_movingQuad.getPosition();
+            m_movingQuad.setSize({
+                movePos.x - pos.x,
+                movePos.y - pos.y
+            });
         }
     }
 
@@ -388,8 +391,7 @@ void SpriteSheetClipper::handleEvents(const robot2D::Event& event) {
         if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
             auto mousePos = m_window -> mapPixelToCoords({event.mouse.x, event.mouse.y}, m_camera.getCameraView());
             m_leftBtnPressed = true;
-            m_movingQuad.aabb.lx = mousePos.x;
-            m_movingQuad.aabb.ly = mousePos.y;
+            m_movingQuad.setPosition({mousePos.x, mousePos.y});
             auto c = viewer::readPixel({mousePos.x, 920 - mousePos.y});
             m_leftBtnPressed = true;
         }
@@ -400,18 +402,19 @@ void SpriteSheetClipper::handleEvents(const robot2D::Event& event) {
         if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
             m_leftBtnPressed = false;
 
+            const auto& aabb = m_movingQuad.getRect();
             robot2D::UIntRect clipRegion = {
-                    static_cast<unsigned int>(m_movingQuad.aabb.lx),
-                    static_cast<unsigned int>(m_movingQuad.aabb.ly),
-                    static_cast<unsigned int>(m_movingQuad.aabb.width),
-                    static_cast<unsigned int>(m_movingQuad.aabb.height)
+                    static_cast<unsigned int>(aabb.lx),
+                    static_cast<unsigned int>(aabb.ly),
+                    static_cast<unsigned int>(aabb.width),
+                    static_cast<unsigned int>(aabb.height)
             };
 
             auto&& cuttedFrames = viewer::SpriteCutter{}.cutFrames(clipRegion, m_texture, {100, 100});
 
             for(const auto& cut: cuttedFrames) {
-                viewer::DebugCollider debugCollider{};
-                debugCollider.aabb = {cut.lx, cut.ly, cut.width, cut.height};
+                viewer::Collider debugCollider{};
+                debugCollider.setRect({cut.lx, cut.ly}, {cut.width, cut.height});
                 m_colliders.emplace_back(debugCollider);
             }
 

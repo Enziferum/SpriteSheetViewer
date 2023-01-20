@@ -5,24 +5,26 @@ namespace viewer {
 
     std::pair<bool, int> ViewerAnimation::contains(const robot2D::vec2f& point) {
         for(int i = 0; i < static_cast<int>(m_colliders.size()); ++i)
-            if(m_colliders[i].aabb.contains(point))
+            if(m_colliders[i].contains(point))
                 return {true, i};
         return {false, -1};
     }
 
-    DebugCollider& ViewerAnimation::operator[](std::size_t index) {
+    Collider& ViewerAnimation::operator[](std::size_t index) {
         return m_colliders[index];
     }
 
-    void ViewerAnimation::addFrame(const DebugCollider& collider,
+    void ViewerAnimation::addFrame(const Collider& collider,
                                    const robot2D::vec2f& worldPosition) {
         m_worldPos = worldPosition;
         m_colliders.emplace_back(collider);
+        const auto& aabb = collider.getRect();
+
         robot2D::FloatRect convertedFrame {
-                collider.aabb.lx - worldPosition.x,
-                collider.aabb.ly - worldPosition.y,
-                collider.aabb.width,
-                collider.aabb.height
+                aabb.lx - worldPosition.x,
+                aabb.ly - worldPosition.y,
+                aabb.width,
+                aabb.height
         };
         m_animation.addFrame(convertedFrame);
     }
@@ -32,7 +34,7 @@ namespace viewer {
         m_animation.eraseFrame(index);
     }
 
-    const DebugCollider& ViewerAnimation::operator[](std::size_t index) const {
+    const Collider& ViewerAnimation::operator[](std::size_t index) const {
         return m_colliders[index];
     }
 
@@ -52,19 +54,20 @@ namespace viewer {
     ViewerAnimation::ViewerAnimation(const Animation& animation,
                                      const robot2D::vec2f& worldPos): m_animation{animation} {
         for(const auto& frame: animation.frames) {
-            auto dd = DebugCollider{};
-            dd.aabb = {worldPos.x + frame.lx, worldPos.y + frame.ly, frame.width, frame.height};
+            auto dd = Collider{};
+            dd.setRect({worldPos.x + frame.lx, worldPos.y + frame.ly}, {frame.width, frame.height});
             m_colliders.emplace_back(dd);
         }
     }
 
-    void ViewerAnimation::addFrame(const DebugCollider& collider) {
+    void ViewerAnimation::addFrame(const Collider& collider) {
         m_colliders.emplace_back(collider);
+        const auto& aabb = collider.getRect();
         robot2D::FloatRect convertedFrame {
-                collider.aabb.lx - m_worldPos.x,
-                collider.aabb.ly - m_worldPos.y,
-                collider.aabb.width,
-                collider.aabb.height
+                aabb.lx - m_worldPos.x,
+                aabb.ly - m_worldPos.y,
+                aabb.width,
+                aabb.height
         };
         m_animation.addFrame(convertedFrame);
     }
@@ -75,13 +78,14 @@ namespace viewer {
         m_colliders.pop_back();
     }
 
-    void ViewerAnimation::addFrame(const DebugCollider& collider, std::size_t index) {
+    void ViewerAnimation::addFrame(const Collider& collider, std::size_t index) {
         m_colliders.insert(m_colliders.begin() + index, collider);
+        const auto& aabb = collider.getRect();
         robot2D::IntRect convertedFrame {
-                collider.aabb.lx - m_worldPos.x,
-                collider.aabb.ly - m_worldPos.y,
-                collider.aabb.width,
-                collider.aabb.height
+                aabb.lx - m_worldPos.x,
+                aabb.ly - m_worldPos.y,
+                aabb.width,
+                aabb.height
         };
         m_animation.frames.insert(m_animation.frames.begin() + index, convertedFrame);
         m_animation.flip_frames.insert(m_animation.frames.begin() + index, convertedFrame);
