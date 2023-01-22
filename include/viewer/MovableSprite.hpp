@@ -1,10 +1,15 @@
 #pragma once
 
 #include <robot2D/Graphics/Sprite.hpp>
+#include "Collider.hpp"
 
 namespace viewer {
     class MovableSprite: public robot2D::Drawable {
     public:
+        MovableSprite() {
+            m_collider.borderColor = robot2D::Color::Black;
+        }
+
         MovableSprite& operator=(const robot2D::Sprite& sprite) {
             setSprite(sprite);
             return *this;
@@ -29,9 +34,14 @@ namespace viewer {
                 target.draw(m_collider);
             target.draw(m_sprite);
         }
+
+        robot2D::IntRect getGlobalBounds() const {
+            auto bounds = m_sprite.getGlobalBounds();
+            return {bounds.lx, bounds.ly, bounds.width, bounds.height};
+        }
     private:
         robot2D::Sprite m_sprite;
         Collider m_collider;
-        bool m_drawCollider{false};
+        bool m_drawCollider{true};
     };
 }

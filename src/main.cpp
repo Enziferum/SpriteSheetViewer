@@ -298,7 +298,7 @@ void SpriteSheetClipper::setup(robot2D::RenderWindow* window) {
 
     robot2D::Image image;
     if(!image.loadFromFile(imagePath)) {
-        RB2D_THROW("Can't load image by path {0}", imagePath);
+        RB2D_THROW("Can't setup image by path {0}", imagePath);
         return;
     }
 
@@ -372,7 +372,6 @@ private:
     std::size_t m_size;
     unsigned int m_channelNum = 4;
 };
-
 
 
 void SpriteSheetClipper::handleEvents(const robot2D::Event& event) {
@@ -465,6 +464,5 @@ int main() {
     engineConfiguration.windowTitle = "SpriteSheet";
 
     //sandboxRun();
-
     ROBOT2D_RUN_ENGINE(viewer::Viewer, engineConfiguration)
 }

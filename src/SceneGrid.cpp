@@ -65,14 +65,14 @@ namespace viewer {
         m_shader.unUse();
     }
 
-    bool SceneGrid::load() {
+    bool SceneGrid::setup() {
         if(!m_shader.createShader(robot2D::shaderType::vertex, gridVertexShader, false)){
-            RB_ERROR("Can't load Grid's vertex shader");
+            RB_ERROR("Can't setup Grid's vertex shader");
             return false;
         }
 
         if(!m_shader.createShader(robot2D::shaderType::fragment, gridFragmentShader, false)){
-            RB_ERROR("Can't load Grid's fragment shader");
+            RB_ERROR("Can't setup Grid's fragment shader");
             return false;
         }
 
@@ -104,24 +104,16 @@ namespace viewer {
         m_vertexArray -> setVertexBuffer(vertexBuffer);
         m_vertexArray -> setIndexBuffer(indexBuffer);
 
-        return true;
-    }
-
-    void SceneGrid::render(const robot2D::View& view, const robot2D::vec2u& size) {
-        m_shader.use();
-        m_shader.setMatrix("projectionMatrix", view.getTransform().get_matrix());
-
-        robot2D::Transform transform;
-        auto sz = size;
-        sz.x *= 2.f;
-        sz.y *= 2.f;
-        transform.scale(sz.as<float>());
-        transform.translate({});
-
         m_vertices[0].pos = robot2D::vec2f {-1.F, -1.F};
         m_vertices[1].pos = robot2D::vec2f {1.F, -1.F};
         m_vertices[2].pos = robot2D::vec2f {1.F, 1.F};
         m_vertices[3].pos = robot2D::vec2f {-1.F, 1.F};
+
+        return true;
+    }
+
+    void SceneGrid::render() const{
+        m_shader.use();
 
         m_vertexArray -> getVertexBuffer() -> setData(&m_vertices[0], sizeof(Vertex) * 4);
 

@@ -2,24 +2,43 @@
 
 #include <robot2D/Graphics/Sprite.hpp>
 #include <robot2D/Graphics/FrameBuffer.hpp>
+
 #include "SpriteSheet.hpp"
 #include "SpriteSheetAnimation.hpp"
 #include "MovableSprite.hpp"
 #include "SceneGrid.hpp"
+#include "Messages.hpp"
+#include "Camera2D.hpp"
 
 namespace viewer {
     class ViewerView: public robot2D::Drawable {
     public:
-        ViewerView();
+        ViewerView() = default;
         ~ViewerView() override = default;
 
-        void setup();
+        void setup(const robot2D::vec2i& windowSize, const Camera2D* camera2D);
         void update(float dt);
-        void processImage();
+        void beforeRender();
+        void afterRender();
 
-        SpriteSheetAnimation* getAnimation() const;
+        void processImage(const robot2D::vec2f& mousePos, const robot2D::vec2f& windowSize);
+        void flipAnimation(bool flag) {
+            sheetAnimation.reset();
+            sheetAnimation.setFlip(flag);
+        }
+
+        SpriteSheetAnimation* getAnimation() {
+            return &sheetAnimation;
+        }
+        robot2D::FrameBuffer::Ptr getFrameBuffer() const { return m_frameBuffer; }
+        robot2D::vec2f getPosition() { return m_animatedSprite.getPosition(); }
+        robot2D::Color getImageMaskColor()const { return m_maskColor; }
+
+        void onLoadImage(robot2D::Image&& image);
+        bool insideView(const robot2D::IntRect& region) const;
     protected:
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates) const override;
+        void onLoadXml(const LoadXmlMessage& message);
     private:
         SpriteSheet m_spriteSheet;
         SpriteSheetAnimation sheetAnimation;
@@ -28,8 +47,7 @@ namespace viewer {
         robot2D::Sprite m_animatedSprite;
         MovableSprite m_sprite;
         SceneGrid m_sceneGrid;
-
-        robot2D::FloatRect movingAABB;
-        robot2D::Color selectColor = robot2D::Color::Green;
+        robot2D::Color m_maskColor;
+        const Camera2D* m_camera2D{nullptr};
     };
 }

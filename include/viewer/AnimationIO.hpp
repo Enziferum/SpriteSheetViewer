@@ -23,6 +23,7 @@ source distribution.
 #pragma once
 
 #include <string>
+#include <robot2D/Graphics/Color.hpp>
 #include "Animation.hpp"
 
 namespace viewer {
@@ -33,6 +34,8 @@ namespace viewer {
 
         bool loadFromFile(const std::string& path);
         bool saveToFile(const std::string& path,
+                        const std::string& texturePath,
+                        const robot2D::Color& maskColor,
                         const AnimationList& animationList,
                         robot2D::vec2f realTexturePos = {});
     private:

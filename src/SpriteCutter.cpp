@@ -1,16 +1,8 @@
 #include <list>
 #include <viewer/SpriteCutter.hpp>
+#include <viewer/utils.hpp>
 
 namespace viewer {
-    bool contains(const robot2D::IntRect& l, const robot2D::IntRect& r) {
-        if(l.lx <= r.lx && l.ly <= r.ly
-           && (l.lx + l.width) >= (r.lx + r.width)
-           && (l.ly + l.height) >= (r.ly + r.height))
-            return true;
-        else
-            return false;
-    }
-
     template<typename T>
     bool intersectsRect(const robot2D::Rect<T>& l, const robot2D::Rect<T>& other) {
         T minX = std::min(l.lx, static_cast<T>(l.lx + l.width));

@@ -42,7 +42,7 @@ namespace viewer {
     void SpriteSheetAnimation::setAnimationRender(robot2D::Sprite& animationRender) {
         m_animatedSprite = &animationRender;
         if(m_animation) {
-            m_animatedSprite->setTextureRect(m_animation -> frames[int(m_currentFrame)]);
+            m_animatedSprite -> setTextureRect(m_animation -> frames[int(m_currentFrame)]);
         }
     }
 
@@ -87,7 +87,5 @@ namespace viewer {
     void SpriteSheetAnimation::reset() {
         m_currentFrame = 0.f;
     }
-
-
 
 }

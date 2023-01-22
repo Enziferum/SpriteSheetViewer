@@ -3,6 +3,15 @@
 
 namespace viewer {
 
+    ViewerAnimation::ViewerAnimation(const Animation& animation,
+                                     const robot2D::vec2f& worldPos): m_animation{animation} {
+        for(const auto& frame: animation.frames) {
+            auto dd = Collider{};
+            dd.setRect({worldPos.x + frame.lx, worldPos.y + frame.ly}, {frame.width, frame.height});
+            m_colliders.emplace_back(dd);
+        }
+    }
+
     std::pair<bool, int> ViewerAnimation::contains(const robot2D::vec2f& point) {
         for(int i = 0; i < static_cast<int>(m_colliders.size()); ++i)
             if(m_colliders[i].contains(point))
@@ -46,19 +55,7 @@ namespace viewer {
         return m_animation;
     }
 
-    void ViewerAnimation::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const  {
-        for(const auto& collider: m_colliders)
-            target.draw(collider);
-    }
 
-    ViewerAnimation::ViewerAnimation(const Animation& animation,
-                                     const robot2D::vec2f& worldPos): m_animation{animation} {
-        for(const auto& frame: animation.frames) {
-            auto dd = Collider{};
-            dd.setRect({worldPos.x + frame.lx, worldPos.y + frame.ly}, {frame.width, frame.height});
-            m_colliders.emplace_back(dd);
-        }
-    }
 
     void ViewerAnimation::addFrame(const Collider& collider) {
         m_colliders.emplace_back(collider);
@@ -91,4 +88,8 @@ namespace viewer {
         m_animation.flip_frames.insert(m_animation.frames.begin() + index, convertedFrame);
     }
 
+    void ViewerAnimation::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const  {
+        for(const auto& collider: m_colliders)
+            target.draw(collider);
+    }
 } // namespace viewer

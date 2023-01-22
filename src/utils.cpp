@@ -79,6 +79,15 @@ namespace viewer {
         return colors;
     }
 
+    bool contains(const robot2D::IntRect& l, const robot2D::IntRect& r) {
+        if(l.lx <= r.lx && l.ly <= r.ly
+           && (l.lx + l.width) >= (r.lx + r.width)
+           && (l.ly + l.height) >= (r.ly + r.height))
+            return true;
+        else
+            return false;
+    }
+
     //struct Tga
 //{
 //    unsigned char head[12];

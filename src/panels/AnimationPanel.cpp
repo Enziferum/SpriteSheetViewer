@@ -165,11 +165,30 @@ namespace viewer {
 
 
     void AnimationPanel::windowFunction() {
-
         checkMouseHover();
 
         InputText("Name", &m_currentName, 0, nullptr, nullptr);
-        colorButton("Add", BIND_CLASS_FN(onAdd));
+        static bool needShowModal = false;
+        colorButton("Add", []() {
+            needShowModal = true;
+        });
+
+        if(needShowModal) {
+            ImGui::OpenPopup("Add Animation");
+            // Always center this window when appearing
+            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+            if(ImGui::BeginPopupModal("Add Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+                ImGui::Text("Enter animation's name");
+                ImGui::Separator();
+                InputText("Name", &m_currentName, 0, nullptr, nullptr);
+                if (ImGui::Button("Cancel", ImVec2(120, 0))) { needShowModal = false; ImGui::CloseCurrentPopup(); }
+                ImGui::SetItemDefaultFocus();
+                ImGui::SameLine();
+                if (ImGui::Button("OK", ImVec2(120, 0))) { needShowModal = false; onAdd(); ImGui::CloseCurrentPopup(); }
+                ImGui::EndPopup();
+            }
+        }
 
         ImGui::LabelText("Frame count ", "%i", m_animation ? m_animation -> getFramesCount() : 0);
         if(m_animation)

@@ -95,7 +95,7 @@ namespace viewer {
         robot2D::Color borderColor = robot2D::Color::Green;
         bool showMovePoints = {false};
     private:
-        robot2D::FloatRect m_aabb;
+        robot2D::FloatRect m_aabb{};
     };
 
 }

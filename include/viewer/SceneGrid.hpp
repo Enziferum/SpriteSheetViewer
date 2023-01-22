@@ -24,8 +24,8 @@ namespace viewer {
         void setGridElementSize(const std::size_t& size);
         void setGridColors(const robot2D::Color& one, const robot2D::Color& two);
 
-        bool load();
-        void render(const robot2D::View& view, const robot2D::vec2u& size);
+        bool setup();
+        void render() const;
     private:
         robot2D::ShaderHandler m_shader{};
         robot2D::Color m_one{};

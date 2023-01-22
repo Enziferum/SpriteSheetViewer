@@ -1,46 +1,147 @@
+#include <filesystem>
+
 #include <robot2D/Graphics/RenderTarget.hpp>
+#include <robot2D/Util/Logger.hpp>
+
 #include <viewer/ViewerView.hpp>
+#include <viewer/utils.hpp>
 
 namespace viewer {
+    namespace {
+        void applyImageMask(robot2D::Image& image, robot2D::Color imageMask) {
+            auto colorFormat = image.getColorFormat();
+            assert(colorFormat == robot2D::ImageColorFormat::RGBA && "Avalable apply image mask only to RGBA color format");
+            auto* buffer = image.getBuffer();
+            assert(buffer != nullptr && "Load image before apply mask");
+            const auto& size = image.getSize();
 
-    void ViewerView::setup() {
-        sheetAnimation.setAnimationRender( m_animatedSprite);
+            for(int i = 0; i < static_cast<int>(size.x * size.y * 4); i += 4) {
+                if(buffer[i] == imageMask.red && buffer[i + 1] == imageMask.green && buffer[i + 2] == imageMask.blue) {
+                    buffer[i + 3] = 0;
+                }
+            }
+        }
+    }
+
+    namespace fs = std::filesystem;
+
+    void ViewerView::setup(const robot2D::vec2i& windowSize, const Camera2D* camera2D)
+    {
+        m_camera2D = camera2D;
+        sheetAnimation.setAnimationRender( m_animatedSprite );
 
         robot2D::FrameBufferSpecification frameBufferSpecification;
         frameBufferSpecification.attachments =  {
                 robot2D::FrameBufferTextureFormat::RGBA8
         };
-        frameBufferSpecification.size = winSize.as<int>();
+        frameBufferSpecification.size = windowSize;
         m_frameBuffer = robot2D::FrameBuffer::Create(frameBufferSpecification);
+
+        m_sceneGrid.setup();
     }
 
     void ViewerView::update(float dt) {
         sheetAnimation.update(dt);
     }
 
-    void ViewerView::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const {
-
+    void ViewerView::beforeRender() {
         m_frameBuffer -> Bind();
-        m_window -> clear(robot2D::Color::White);
+    }
 
-        m_sceneGrid.render(m_camera2D.getCameraView(), m_window->getSize());
-
-        m_window -> beforeRender();
-        m_window -> setView(m_camera2D.getCameraView());
-
-        m_window -> draw(m_sprite);
-        if(m_currentAnimation >= 0)
-            m_window -> draw(m_animations[m_currentAnimation]);
-
-        if(m_leftMousePressed) {
-            viewer::Collider debugCollider;
-            debugCollider.setRect(movingAABB);
-            debugCollider.borderColor = selectColor;
-            m_window -> draw(debugCollider);
-        }
-
-        m_window -> afterRender();
-        m_panelManager.render();
+    void ViewerView::afterRender() {
         m_frameBuffer -> unBind();
     }
+
+    void ViewerView::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const {
+        target.clear(robot2D::Color::White);
+        m_sceneGrid.render();
+
+        target.beforeRender();
+        target.setView(m_camera2D -> getCameraView());
+
+        target.draw(m_sprite);
+    }
+
+    void ViewerView::processImage(const robot2D::vec2f& mousePos, const robot2D::vec2f& windowSize) {
+        auto convertedMousePos = m_camera2D -> mapPixelToCoords(mousePos, m_frameBuffer);
+        auto&& maskColor = readPixel({convertedMousePos.x, windowSize.y - convertedMousePos.y});
+        m_maskColor = maskColor;
+        robot2D::Image image{};
+        image.create(m_texture.getSize(), m_texture.getPixels(), robot2D::ImageColorFormat::RGBA);
+        applyImageMask(image, maskColor);
+        m_texture.create(image);
+    }
+
+    void ViewerView::onLoadImage(robot2D::Image&& image) {
+        m_texture.create(image);
+
+        auto& textureSize = m_texture.getSize();
+        m_animatedSprite.setTexture(m_texture, {0, 0,
+                                                static_cast<int>(textureSize.x),
+                                                static_cast<int>(textureSize.y)});
+
+        auto&& bounds = m_animatedSprite.getGlobalBounds();
+        auto windowSize = m_frameBuffer -> getSpecification().size;
+
+        robot2D::vec2f spritePosition = {
+                windowSize.x / 2.F - bounds.width / 2.F,
+                windowSize.y / 2.F - bounds.height / 2.F
+        };
+
+        m_animatedSprite.setPosition(spritePosition);
+        m_sprite = m_animatedSprite;
+    }
+
+    void ViewerView::onLoadXml(const LoadXmlMessage& message) {
+        sheetAnimation.reset();
+        m_spriteSheet.removeAll();
+
+        if(!m_spriteSheet.loadFromFile(message.filePath)) {
+            RB_ERROR("Can't setup sprite sheet by path: {0}", message.filePath);
+            return;
+        }
+
+        fs::path path{message.filePath};
+        path.remove_filename();
+        path.assign(m_spriteSheet.getTexturePath());
+
+        if(!m_texture.loadFromFile(path.string())) {
+            RB_ERROR("Can't setup texture by path: {0}", message.filePath);
+            return;
+        }
+
+        auto& textureSize = m_texture.getSize();
+        m_animatedSprite.setTexture(m_texture, {0, 0,
+                                                static_cast<int>(textureSize.x),
+                                                static_cast<int>(textureSize.y)});
+
+        auto&& bounds = m_animatedSprite.getGlobalBounds();
+        auto windowSize = m_frameBuffer -> getSpecification().size;
+
+        robot2D::vec2f spritePosition = {
+                windowSize.x / 2.F - bounds.width / 2.F,
+                windowSize.y / 2.F - bounds.height / 2.F
+        };
+
+        m_animatedSprite.setPosition(spritePosition);
+        m_sprite = m_animatedSprite;
+
+//        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
+//        for(const auto& animation: m_spriteSheet.getAnimations()) {
+//            m_animations.emplace_back(ViewerAnimation{animation, spritePosition});
+//            auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
+//            msg -> name = animation.title;
+//        }
+//
+//        auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
+//        auto& animationPanel = m_panelManager.getPanel<AnimationPanel>();
+//        auto* sheet = viewerPanel.getSpriteSheetAnimation();
+//        if(sheet)
+//            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
+    }
+
+    bool ViewerView::insideView(const robot2D::IntRect& region) const {
+        return contains(m_sprite.getGlobalBounds(), region);
+    }
+
 }

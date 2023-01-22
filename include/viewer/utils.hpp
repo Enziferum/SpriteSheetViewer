@@ -13,4 +13,6 @@ namespace viewer {
 
     robot2D::Color readPixel(robot2D::vec2f mousePos);
     std::vector<robot2D::Color> readPixels(const robot2D::IntRect& region);
+
+    bool contains(const robot2D::IntRect& l, const robot2D::IntRect& r);
 } // namespace viewer

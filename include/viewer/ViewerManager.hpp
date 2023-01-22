@@ -8,6 +8,7 @@
 #include "ViewerAnimation.hpp"
 
 namespace viewer {
+    class ISceneView;
     class IViewerManager {
     public:
         virtual ~IViewerManager() = 0;
@@ -19,11 +20,19 @@ namespace viewer {
         ViewerManager(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher);
         ~ViewerManager() = default;
 
-        void setupMessages();
+        void setup(ISceneView* view);
+
+        void cutFrames(const robot2D::FloatRect& clipRegion,
+                       const robot2D::vec2f& worldPosition);
+
+        void setCollider(const robot2D::FloatRect& collidingRect);
+        Collider& getCollider(int index);
 
         void undo();
         void redo();
         void deleteFrame();
+        std::pair<bool, int> getCollisionPair(const robot2D::vec2f& point);
+
     private:
         void onAddAnimation(const AddAnimationMessage& message);
         void onSwitchAnimation(const SwitchAnimationMessage& message);
@@ -35,6 +44,7 @@ namespace viewer {
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
+        ISceneView* m_view;
 
         CommandStack m_commandStack;
         std::vector<ViewerAnimation> m_animations;
