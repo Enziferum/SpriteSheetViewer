@@ -37,8 +37,9 @@ namespace viewer {
         if(!render || m_animation -> getFramesCount() == 0)
             return;
 
-        auto contentSize = ImGui::GetContentRegionAvail();
-        robot2D::vec2f possibleImageSize = { contentSize.x, contentSize.y };
-        robot2D::AnimatedImage(*render, possibleImageSize);
+        auto contentSize = ImGui::GetWindowSize();
+        robot2D::vec2f imageSize = { contentSize.x / 2.F, contentSize.y / 2.F };
+        ImGui::SetCursorPos({(contentSize.x - imageSize.x) / 2.F, (contentSize.y - imageSize.y) / 2.F});
+        robot2D::AnimatedImage(*render, imageSize);
     }
 }
