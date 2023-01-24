@@ -1,8 +1,8 @@
-#include <robot2D/imgui/Api.hpp>
-
 #include <viewer/panels/ScenePanel.hpp>
 #include <viewer/macro.hpp>
 #include <viewer/Messages.hpp>
+
+#include <robot2D/imgui/Api.hpp>
 
 namespace viewer {
 

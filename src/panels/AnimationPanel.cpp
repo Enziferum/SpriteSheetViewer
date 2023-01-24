@@ -11,68 +11,11 @@ namespace viewer {
         constexpr const int max_value = 100;
     }
 
-    using closeCallback = void(*)();
-    template<typename ImGuiFunc, typename ... Args>
-    void imguiFunc(ImGuiFunc&& func, closeCallback&& close, Args&& ... args) {
-        if(func(std::forward<Args>(args)...)) {
-            close();
-        }
-    }
-
-    class Button {
-    public:
-        Button();
-        Button(std::string title);
-        Button(std::string title, std::initializer_list<robot2D::Color> colors);
-        ~Button();
-
-        template<
-                typename Func,
-                typename ...Args,
-                typename = std::enable_if_t<std::is_invocable_v<Func, Args...>>
-        >
-        void onCall(Func&& func, Args&& ... args) {
-            if(ImGui::Begin(m_title.c_str()))
-                func(std::forward<Args>(args)...);
-        }
-    private:
-        void pushColors(const std::initializer_list<robot2D::Color>& colors);
-    private:
-        std::string m_title;
-        std::array<robot2D::Color, 3> m_buttonColors;
-    };
-
-    Button::Button(): m_title{"Default"}, m_buttonColors{} {
-
-    }
-
-    Button::Button(std::string title): m_title{title}, m_buttonColors{} {
-
-    }
-
-    Button::Button(std::string title, std::initializer_list<robot2D::Color> colors):
-            m_title{title} {
-        pushColors(colors);
-    }
-
-    void Button::pushColors(const std::initializer_list<robot2D::Color>& colors) {
-        int index = 0;
-        for(const auto& color: colors) {
-            m_buttonColors[index] = color;
-            ++index;
-        }
-    }
-
-    Button::~Button() {
-        if(!m_buttonColors.empty())
-            ImGui::PopStyleColor(m_buttonColors.size());
-        ImGui::PopID();
-    }
-
+    /////////////////////////////////// Move to ROBOT2D_IMGUI /////////////////////////////////////////////
     struct ColorButton {
         enum class Type {
             Default, Hovered, Active
-        };
+        } type;
 
         robot2D::Color color;
     };
@@ -82,10 +25,53 @@ namespace viewer {
             typename ...Args,
             typename = std::enable_if_t<std::is_invocable_v<Func, Args...>>
     >
-    void colorButton(std::string title, Func&& func, Args&& ... args) {
+    void colorButton(std::string title,
+                     std::initializer_list<ColorButton> colors,
+                     Func&& func, Args&& ... args) {
+        ImGui::PushID(title.c_str());
+        for(const auto& color: colors) {
+            switch(color.type) {
+                case ColorButton::Type::Default:
+                    ImGui::PushStyleColor(
+                            ImGuiCol_Button,
+                            (ImVec4)ImColor{
+                                color.color.red,
+                                color.color.green,
+                                color.color.blue,
+                                color.color.alpha
+                            }
+                    );
+                    break;
+                case ColorButton::Type::Hovered:
+                    ImGui::PushStyleColor(
+                            ImGuiCol_ButtonHovered,
+                            (ImVec4)ImColor{
+                                    color.color.red,
+                                    color.color.green,
+                                    color.color.blue,
+                                    color.color.alpha
+                            }
+                    );
+                    break;
+                case ColorButton::Type::Active:
+                    ImGui::PushStyleColor(
+                            ImGuiCol_ButtonActive,
+                            (ImVec4)ImColor{
+                                    color.color.red,
+                                    color.color.green,
+                                    color.color.blue,
+                                    color.color.alpha
+                            }
+                    );
+                    break;
+            }
+        }
         if(ImGui::Button(title.c_str()))
             func(std::forward<Args>(args)...);
+        ImGui::PopStyleColor(static_cast<int>(colors.size()));
+        ImGui::PopID();
     }
+
 
     struct InputTextCallback_UserData
     {
@@ -96,20 +82,21 @@ namespace viewer {
 
     static int InputTextCallback(ImGuiInputTextCallbackData* data)
     {
-        InputTextCallback_UserData* user_data = (InputTextCallback_UserData*)data->UserData;
-        if (data->EventFlag == ImGuiInputTextFlags_CallbackResize)
+        auto* user_data = static_cast<InputTextCallback_UserData*>(data -> UserData);
+        assert(user_data != nullptr && "InputTextCallback user data can't be nullptr");
+        if (data -> EventFlag == ImGuiInputTextFlags_CallbackResize)
         {
             // Resize string callback
             // If for some reason we refuse the new length (BufTextLen) and/or capacity (BufSize) we need to set them back to what we want.
-            std::string* str = user_data->Str;
-            IM_ASSERT(data->Buf == str->c_str());
-            str->resize(data->BufTextLen);
-            data->Buf = (char*)str->c_str();
+            std::string* str = user_data -> Str;
+            IM_ASSERT(data -> Buf == str -> c_str());
+            str -> resize(data -> BufTextLen);
+            data -> Buf = const_cast<char*>(str -> c_str());
         }
         else if (user_data->ChainCallback)
         {
             // Forward to user callback, if any
-            data->UserData = user_data->ChainCallbackUserData;
+            data -> UserData = user_data -> ChainCallbackUserData;
             return user_data->ChainCallback(data);
         }
         return 0;
@@ -121,12 +108,22 @@ namespace viewer {
         IM_ASSERT((flags & ImGuiInputTextFlags_CallbackResize) == 0);
         flags |= ImGuiInputTextFlags_CallbackResize;
 
-        InputTextCallback_UserData cb_user_data;
+        InputTextCallback_UserData cb_user_data{};
         cb_user_data.Str = str;
         cb_user_data.ChainCallback = callback;
         cb_user_data.ChainCallbackUserData = user_data;
-        return ImGui::InputText(label, (char*)str->c_str(), str->capacity() + 1, flags, InputTextCallback, &cb_user_data);
+        return ImGui::InputText(
+                label,
+                const_cast<char*>(str->c_str()),
+                str -> capacity() + 1,
+                flags,
+                InputTextCallback,
+                &cb_user_data
+        );
     }
+
+    /////////////////////////////////// Move to ROBOT2D_IMGUI /////////////////////////////////////////////
+
 
     AnimationPanel::AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher):
         IPanel(typeid(AnimationPanel)),
@@ -151,9 +148,9 @@ namespace viewer {
 
     void AnimationPanel::update(float dt) {
         (void)dt;
-        robot2D::WindowOptions windowOptions = robot2D::WindowOptions {
+        auto windowOptions = robot2D::WindowOptions {
                 {
-                        {ImGuiStyleVar_WindowPadding, {0, 0}}
+                        { ImGuiStyleVar_WindowPadding, {0, 0} }
                 },
                 {}
         };
@@ -161,7 +158,7 @@ namespace viewer {
         windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "AnimationPanel";
 
-        robot2D::createWindow(windowOptions, [this]() { windowFunction(); });
+        robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
     }
 
 
@@ -171,13 +168,18 @@ namespace viewer {
         InputText("Name", &m_currentName, 0, nullptr, nullptr);
         if(m_currentAnimation >= 0 && !m_animationNames.empty() && m_currentName != m_animationNames[m_currentAnimation])
             m_animationNames[m_currentAnimation] = m_currentName;
+        static auto addButtonColors = {
+                ColorButton{ ColorButton::Type::Default, robot2D::Color::Black },
+                ColorButton{ ColorButton::Type::Hovered, robot2D::Color::Yellow },
+                ColorButton{ ColorButton::Type::Active, robot2D::Color::Yellow },
+        };
 
-        colorButton("Add", [this]() { m_needShowModal = true; });
+        colorButton("Add", addButtonColors, [this]() { m_needShowModal = true; });
 
         if(m_needShowModal)
            showAddAnimationPanel();
 
-        ImGui::LabelText("Frame count ", "%i", m_animation ? m_animation -> getFramesCount() : 0);
+        ImGui::LabelText("Frame count ", "%lli", m_animation ? m_animation -> getFramesCount() : 0);
         if(m_animation && m_animation -> getSpeed())
             if (!ImGui::SliderInt("Speed", m_animation -> getSpeed(), min_value, max_value)) {}
 
@@ -222,9 +224,21 @@ namespace viewer {
             m_lastCurrentAnimation = m_currentAnimation;
         }
 
-        colorButton("Save", BIND_CLASS_FN(onSave));
+        static auto saveButtonColors = {
+                ColorButton{ ColorButton::Type::Default, robot2D::Color::Black },
+                ColorButton{ ColorButton::Type::Hovered, robot2D::Color::Green},
+                ColorButton{ ColorButton::Type::Active, robot2D::Color::Green},
+        };
+
+        static auto deleteButtonColors = {
+                ColorButton{ ColorButton::Type::Default, robot2D::Color::Black },
+                ColorButton{ ColorButton::Type::Hovered, robot2D::Color::Red},
+                ColorButton{ ColorButton::Type::Active, robot2D::Color::Red },
+        };
+
+        colorButton("Save", saveButtonColors, BIND_CLASS_FN(onSave));
         ImGui::SameLine();
-        colorButton("Delete", BIND_CLASS_FN(onDelete));
+        colorButton("Delete", deleteButtonColors, BIND_CLASS_FN(onDelete));
     }
 
     void AnimationPanel::setAnimation(SpriteSheetAnimation* animation) {

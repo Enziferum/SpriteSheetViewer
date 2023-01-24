@@ -1,6 +1,7 @@
 #pragma once
 
 #include <robot2D/Graphics/View.hpp>
+#include <robot2D/Graphics/Image.hpp>
 #include <robot2D/Graphics/RenderWindow.hpp>
 #include <robot2D/Graphics/FrameBuffer.hpp>
 
