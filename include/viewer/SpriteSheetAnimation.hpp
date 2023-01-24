@@ -9,7 +9,7 @@ namespace viewer {
         SpriteSheetAnimation();
         ~SpriteSheetAnimation() override = default;
 
-        void setAnimation(Animation& animation);
+        void setAnimation(Animation* animation);
         void setAnimationRender(robot2D::Sprite& animationRender);
         robot2D::Sprite* getAnimationRender();
 

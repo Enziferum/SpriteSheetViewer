@@ -10,8 +10,8 @@ namespace viewer {
             m_flip(false)
     {}
 
-    void SpriteSheetAnimation::setAnimation(Animation& animation) {
-        m_animation = &animation;
+    void SpriteSheetAnimation::setAnimation(Animation* animation) {
+        m_animation = animation;
     }
 
     void SpriteSheetAnimation::update(float dt) {

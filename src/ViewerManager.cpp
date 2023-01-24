@@ -85,6 +85,10 @@ namespace viewer {
     }
 
     void ViewerManager::onLoadImage(const LoadImageMessage& message) {
+        m_currentAnimation = NO_INDEX;
+        m_updateIndex = NO_INDEX;
+        m_animations.clear();
+
         robot2D::Image image{};
         if(!image.loadFromFile(message.filePath)) {
             RB_ERROR("Can't load image by path {0}", message.filePath);
@@ -92,11 +96,14 @@ namespace viewer {
         }
 
         m_view -> onLoadImage(std::move(image));
-        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
+        auto* msg = m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
+        msg -> needAddAnimation = true;
+        m_view -> updateAnimation(nullptr);
     }
 
     void ViewerManager::onLoadXml(const LoadXmlMessage& message) {
         m_currentAnimation = 0;
+        m_updateIndex = NO_INDEX;
         m_animations.clear();
 
         SpriteSheet spriteSheet;
@@ -119,7 +126,7 @@ namespace viewer {
         if(!result.first)
             return;
 
-        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
+        m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
         for(const auto& animation: spriteSheet.getAnimations()) {
             m_animations.emplace_back(ViewerAnimation{animation, result.second});
             auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);

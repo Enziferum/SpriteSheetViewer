@@ -267,8 +267,14 @@ namespace viewer {
         m_currentAnimation = animation;
         auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
         auto* sheet = viewerPanel.getSpriteSheetAnimation();
-        if(sheet)
-            sheet -> setAnimation(animation -> getAnimation());
+        if(sheet) {
+            sheet -> reset();
+            if(animation)
+                sheet -> setAnimation(&animation -> getAnimation());
+            else
+                sheet -> setAnimation(nullptr);
+        }
+
     }
 
     void ViewerScene::onLoadImage(robot2D::Image&& image) {

@@ -14,9 +14,8 @@ namespace viewer {
         SceneViewportSize,
         LoadImage,
         LoadXml,
-        AnimationPanelLoadXml,
+        AnimationPanelLoad,
         AnimationPanelAddAnimation,
-        AnimationPanelReset
     };
 
     struct AddAnimationMessage {
@@ -50,5 +49,9 @@ namespace viewer {
 
     struct AnimationPanelLoadMessage {
         std::string name;
+    };
+
+    struct AnimationPanelLoadEmptyMessage {
+        bool needAddAnimation{false};
     };
 }

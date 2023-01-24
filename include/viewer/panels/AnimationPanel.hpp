@@ -1,10 +1,12 @@
 #pragma once
 
-#include <viewer/Animation.hpp>
 #include <robot2D/Core/MessageBus.hpp>
+
 #include <viewer/MessageDispather.hpp>
+#include <viewer/SpriteSheetAnimation.hpp>
+#include <viewer/Messages.hpp>
+
 #include "IPanel.hpp"
-#include "viewer/SpriteSheetAnimation.hpp"
 
 namespace viewer {
     class AnimationPanel: public IPanel {
@@ -19,9 +21,14 @@ namespace viewer {
         void setup();
 
         void windowFunction();
+        void showAddAnimationPanel();
+
         void onAdd();
         void onSave();
         void onDelete();
+
+        void onLoad(const AnimationPanelLoadEmptyMessage& message);
+        void onLoadAnimation(const AnimationPanelLoadMessage& message);
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
@@ -31,6 +38,7 @@ namespace viewer {
         std::string m_addName;
         int m_currentAnimation = 0;
         int m_lastCurrentAnimation = -1;
+        bool m_needShowModal{false};
     };
 
 } // namespace viewer

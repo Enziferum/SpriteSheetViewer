@@ -141,20 +141,11 @@ namespace viewer {
     void AnimationPanel::setup() {
         onAdd();
 
-        m_messageDispatcher.onMessage<bool>(MessageID::AnimationPanelLoadXml, [this](bool) {
-            m_animationNames.clear();
-            m_currentName = "Default Animation";
-            m_addName = "";
-            m_currentAnimation = 0;
-            m_lastCurrentAnimation = 0;
-        });
+        m_messageDispatcher.onMessage<AnimationPanelLoadEmptyMessage>(
+                MessageID::AnimationPanelLoad, BIND_CLASS_FN(onLoad));
 
-        m_messageDispatcher.onMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation,
-                                                                 [this](const AnimationPanelLoadMessage& message) {
-                                                                     if(m_animationNames.empty())
-                                                                         m_currentName = message.name;
-                                                                     m_animationNames.emplace_back(message.name);
-                                                                 });
+        m_messageDispatcher.onMessage<AnimationPanelLoadMessage>(
+                MessageID::AnimationPanelAddAnimation, BIND_CLASS_FN(onLoadAnimation));
     }
 
 
@@ -181,27 +172,10 @@ namespace viewer {
         if(m_currentAnimation >= 0 && !m_animationNames.empty() && m_currentName != m_animationNames[m_currentAnimation])
             m_animationNames[m_currentAnimation] = m_currentName;
 
-        static bool needShowModal = false;
-        colorButton("Add", []() {
-            needShowModal = true;
-        });
+        colorButton("Add", [this]() { m_needShowModal = true; });
 
-        if(needShowModal) {
-            ImGui::OpenPopup("Add Animation");
-            // Always center this window when appearing
-            ImVec2 center = ImGui::GetMainViewport()->GetCenter();
-            ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
-            if(ImGui::BeginPopupModal("Add Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-                ImGui::Text("Enter animation's name");
-                ImGui::Separator();
-                InputText("Name", &m_addName, 0, nullptr, nullptr);
-                if (ImGui::Button("Cancel", ImVec2(120, 0))) { needShowModal = false; ImGui::CloseCurrentPopup(); }
-                ImGui::SetItemDefaultFocus();
-                ImGui::SameLine();
-                if (ImGui::Button("OK", ImVec2(120, 0))) { needShowModal = false; onAdd(); ImGui::CloseCurrentPopup(); }
-                ImGui::EndPopup();
-            }
-        }
+        if(m_needShowModal)
+           showAddAnimationPanel();
 
         ImGui::LabelText("Frame count ", "%i", m_animation ? m_animation -> getFramesCount() : 0);
         if(m_animation && m_animation -> getSpeed())
@@ -287,6 +261,38 @@ namespace viewer {
         }
         m_currentName = m_animationNames[switchIndex];
         msg -> switchToIndex = switchIndex;
+    }
+
+    void AnimationPanel::onLoad(const AnimationPanelLoadEmptyMessage& message) {
+        m_animationNames.clear();
+        m_currentName = "Default Animation";
+        m_addName = "Default Animation";
+        m_currentAnimation = 0;
+        m_lastCurrentAnimation = -1;
+        if(message.needAddAnimation)
+            onAdd();
+    }
+
+    void AnimationPanel::onLoadAnimation(const AnimationPanelLoadMessage& message) {
+        if(m_animationNames.empty())
+            m_currentName = message.name;
+        m_animationNames.emplace_back(message.name);
+    }
+
+    void AnimationPanel::showAddAnimationPanel() {
+        ImGui::OpenPopup("Add Animation");
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+        if(ImGui::BeginPopupModal("Add Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Enter animation's name");
+            ImGui::Separator();
+            InputText("Name", &m_addName, 0, nullptr, nullptr);
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) { m_needShowModal = false; ImGui::CloseCurrentPopup(); }
+            ImGui::SetItemDefaultFocus();
+            ImGui::SameLine();
+            if (ImGui::Button("OK", ImVec2(120, 0))) { m_needShowModal = false; onAdd(); ImGui::CloseCurrentPopup(); }
+            ImGui::EndPopup();
+        }
     }
 
 } // namespace viewer
