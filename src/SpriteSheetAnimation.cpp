@@ -4,16 +4,14 @@
 namespace viewer {
 
     SpriteSheetAnimation::SpriteSheetAnimation():
-            m_currentFrame(0.f),
-            m_flip(false),
-            m_speed(8.f),
+            m_animation{nullptr},
             m_animatedSprite{nullptr},
-            m_animation{nullptr}
+            m_currentFrame{0.f},
+            m_flip(false)
     {}
 
-
-    void SpriteSheetAnimation::setAnimation(Animation& animation) {
-        m_animation = &animation;
+    void SpriteSheetAnimation::setAnimation(Animation* animation) {
+        m_animation = animation;
     }
 
     void SpriteSheetAnimation::update(float dt) {
@@ -23,7 +21,7 @@ namespace viewer {
         if(m_visibleFrameCounts == -1)
             m_visibleFrameCounts = m_animation -> frames.size();
 
-        m_currentFrame += m_speed * dt;
+        m_currentFrame += m_animation -> delay * dt;
         if((int)m_currentFrame >= m_animation -> frames.size())
             m_currentFrame = 0.f;
 
@@ -31,9 +29,6 @@ namespace viewer {
             m_animatedSprite -> setTextureRect(m_animation -> flip_frames[int(m_currentFrame)]);
         else
             m_animatedSprite -> setTextureRect(m_animation -> frames[int(m_currentFrame)]);
-
-        auto frame = m_animation -> frames[int(m_currentFrame)];
-        //m_animatedSprite -> setSize({frame.width, frame.height});
     }
 
     void SpriteSheetAnimation::draw(robot2D::RenderTarget& target, robot2D::RenderStates) const {
@@ -43,7 +38,7 @@ namespace viewer {
     void SpriteSheetAnimation::setAnimationRender(robot2D::Sprite& animationRender) {
         m_animatedSprite = &animationRender;
         if(m_animation) {
-            m_animatedSprite->setTextureRect(m_animation -> frames[int(m_currentFrame)]);
+            m_animatedSprite -> setTextureRect(m_animation -> frames[int(m_currentFrame)]);
         }
     }
 
@@ -63,7 +58,7 @@ namespace viewer {
         return m_currentFrame;
     }
 
-    const size_t SpriteSheetAnimation::getFramesCount() const {
+    size_t SpriteSheetAnimation::getFramesCount() const {
         if(!m_animation)
             return 0;
 
@@ -73,22 +68,30 @@ namespace viewer {
             return m_animation -> flip_frames.size();
     }
 
-    void SpriteSheetAnimation::setSpeed(const float &speed) {
-        m_speed = speed;
-    }
-
-    const float& SpriteSheetAnimation::getSpeed() const {
-        return m_speed;
-    }
-
-    float& SpriteSheetAnimation::getSpeed() {
-        return m_speed;
+    int* SpriteSheetAnimation::getSpeed() {
+        if(m_animation)
+            return &m_animation -> delay;
+        return nullptr;
     }
 
     void SpriteSheetAnimation::reset() {
         m_currentFrame = 0.f;
     }
 
+    void SpriteSheetAnimation::increaseVisibleFrames() {
+        if(!m_animation || !m_animation -> valid())
+            return;
+        if(m_visibleFrameCounts < m_animation -> frames.size())
+            ++m_visibleFrameCounts;
+    }
 
+    void SpriteSheetAnimation::decreaseVisibleFrames() {
+        if(m_visibleFrameCounts > 0)
+            --m_visibleFrameCounts;
+    }
+
+    const int& SpriteSheetAnimation::getVisibleFrameCounts() const {
+        return m_visibleFrameCounts;
+    }
 
 }

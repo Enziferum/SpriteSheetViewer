@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <robot2D/Graphics/Rect.hpp>
-
+#include <robot2D/Graphics/Color.hpp>
 #include "Animation.hpp"
 
 namespace viewer {
@@ -21,7 +21,12 @@ namespace viewer {
         ~SpriteSheet() = default;
 
         bool loadFromFile(const std::string& path);
-        void setAnimations(std::vector<Animation> anims) { m_animations = std::move(anims); }
+        bool saveToFile(const std::string& path,
+                        const std::string& texturePath,
+                        const robot2D::Color& maskColor,
+                        const AnimationList& animationList,
+                        robot2D::vec2f realTexturePos = {});
+
         const AnimationList& getAnimations() const { return m_animations; }
 
         Animation* operator[](std::size_t index) {
@@ -36,10 +41,13 @@ namespace viewer {
             else
                 return !m_animations[0].valid();
         }
+
+        const std::string& getTexturePath() const { return m_texturePath; }
     private:
+        std::string m_texturePath;
         std::vector<Animation> m_animations;
     };
-}
+} // namespace viewer
 
 
 
