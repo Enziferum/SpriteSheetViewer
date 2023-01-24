@@ -1,5 +1,6 @@
-#include <viewer/panels/ScenePanel.hpp>
 #include <robot2D/imgui/Api.hpp>
+
+#include <viewer/panels/ScenePanel.hpp>
 #include <viewer/macro.hpp>
 #include <viewer/Messages.hpp>
 
@@ -13,13 +14,7 @@ namespace viewer {
     }
 
     void ScenePanel::update(float dt) {
-        if(ImGui::IsMouseClicked(ImGuiMouseButton_Left) ||
-                ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
-            auto[mx, my] = ImGui::GetMousePos();
-            mx -= m_ViewportBounds[0].x;
-            my -= m_ViewportBounds[0].y;
-        }
-
+        (void)dt;
         guiRender();
     }
 
@@ -41,8 +36,6 @@ namespace viewer {
     }
 
     void ScenePanel::windowFunction() {
-        checkMouseHover();
-
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
@@ -51,10 +44,7 @@ namespace viewer {
         m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
                                 viewportMaxRegion.y + viewportOffset.y };
 
-        //  m_panelFocused = ImGui::IsWindowFocused();
-        // m_panelHovered = ImGui::IsWindowHovered();
-
-        /// TODO: @a.raag switch mode of camera ///
+        /// TODO(a.raag) switch mode of camera ///
         auto ViewPanelSize = ImGui::GetContentRegionAvail();
 
         if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
@@ -68,6 +58,5 @@ namespace viewer {
 
         robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());
     }
-
 
 } // namespace viewer

@@ -16,11 +16,9 @@ namespace viewer {
     }
 
     bool PanelManager::isMouseIsOver() const {
-        for(const auto& panel: m_panels) {
-            if (panel -> isMouseOver())
-                return true;
-        }
-        return false;
+        return std::any_of(m_panels.begin(), m_panels.end(), [](const auto& panel) {
+            return panel -> isMouseOver();
+        });
     }
 
     void PanelManager::dockingUpdate() {

@@ -284,13 +284,24 @@ namespace viewer {
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
         if(ImGui::BeginPopupModal("Add Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            setMouseHoverDirectly(true);
             ImGui::Text("Enter animation's name");
             ImGui::Separator();
             InputText("Name", &m_addName, 0, nullptr, nullptr);
-            if (ImGui::Button("Cancel", ImVec2(120, 0))) { m_needShowModal = false; ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                setMouseHoverDirectly(false);
+                m_needShowModal = false;
+                ImGui::CloseCurrentPopup();
+            }
+
             ImGui::SetItemDefaultFocus();
             ImGui::SameLine();
-            if (ImGui::Button("OK", ImVec2(120, 0))) { m_needShowModal = false; onAdd(); ImGui::CloseCurrentPopup(); }
+            if (ImGui::Button("OK", ImVec2(120, 0))) {
+                setMouseHoverDirectly(false);
+                m_needShowModal = false;
+                onAdd();
+                ImGui::CloseCurrentPopup();
+            }
             ImGui::EndPopup();
         }
     }

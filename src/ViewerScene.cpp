@@ -103,7 +103,7 @@ namespace viewer {
         });
 
         m_eventBinder.bindEvent(robot2D::Event::MouseMoved, [this](const robot2D::Event& event) {
-            if(m_leftMousePressed) {
+            if(m_leftMousePressed && !m_panelManager.isMouseIsOver()) {
                 robot2D::vec2f movePos{event.move.x, event.move.y};
 
                 auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
@@ -156,15 +156,15 @@ namespace viewer {
     void ViewerScene::handleEvents(const robot2D::Event& event) {
         m_panelManager.handleEvents(event);
         m_eventBinder.handleEvents(event);
-        auto& panel = m_panelManager.getPanel<ScenePanel>();
-        if(panel.isMouseOver())
+        if(!m_panelManager.isMouseIsOver())
             m_camera2D.handleEvents(event);
     }
 
     void ViewerScene::update(float dt) {
         m_View.update(dt);
         m_panelManager.update(dt);
-        m_camera2D.update(dt, m_window);
+        if(!m_panelManager.isMouseIsOver())
+            m_camera2D.update(dt, m_window);
     }
 
     void ViewerScene::render() {
@@ -180,6 +180,9 @@ namespace viewer {
     }
 
     void ViewerScene::onMousePressed(const robot2D::Event& event) {
+        if(m_panelManager.isMouseIsOver())
+            return;
+
         robot2D::vec2i convertedPoint { event.mouse.x, event.mouse.y };
         auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
         convertedPoint -= bounds.as<int>();
@@ -213,6 +216,9 @@ namespace viewer {
     }
 
     void ViewerScene::onMouseReleased(const robot2D::Event& event) {
+        if(m_panelManager.isMouseIsOver())
+            return;
+
         if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
             auto rect = m_selectCollider.getRect();
             if(m_View.insideView({rect.lx, rect.ly, rect.width, rect.height}))
@@ -230,6 +236,8 @@ namespace viewer {
     }
 
     void ViewerScene::onKeyboardPressed(const robot2D::Event& event) {
+        if(m_panelManager.isMouseIsOver())
+            return;
 
         if(event.key.code == m_inputMap[KeyAction::FlipLeft]) {
             m_View.flipAnimation(false);
@@ -258,7 +266,9 @@ namespace viewer {
 
         if(event.key.code == m_inputMap[KeyAction::Transparent]) {
             auto sz = m_window -> getSize();
-            m_View.processImage(m_window -> getMousePos(), sz.as<float>());
+            auto mousePos = m_window -> getMousePos();
+            if(m_View.insideView({mousePos.x, mousePos.y, 1, 1}))
+                m_View.processImage(mousePos, sz.as<float>());
             return;
         }
     }

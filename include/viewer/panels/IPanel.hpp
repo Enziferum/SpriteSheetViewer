@@ -22,6 +22,7 @@ namespace viewer {
         virtual bool isMouseOver() const { return m_mouseIsOver; }
     protected:
         virtual void checkMouseHover();
+        virtual void setMouseHoverDirectly(bool flag) { m_mouseIsOver = flag; }
     protected:
         PanelID m_id;
         bool m_mouseIsOver{false};
