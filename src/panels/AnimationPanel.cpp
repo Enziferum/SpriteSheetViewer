@@ -7,8 +7,8 @@
 
 namespace viewer {
     namespace {
-        constexpr float min_value = 1.f;
-        constexpr float max_value = 100.f;
+        constexpr const int min_value = 1;
+        constexpr const int max_value = 100;
     }
 
     using closeCallback = void(*)();
@@ -131,25 +131,35 @@ namespace viewer {
     AnimationPanel::AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher):
         IPanel(typeid(AnimationPanel)),
         m_messageBus{messageBus},
-        m_messageDispatcher{messageDispatcher}{
-        m_currentName = "New Animation";
+        m_messageDispatcher{messageDispatcher} {
+        m_currentName = "Default Animation";
+        m_addName = "Default Animation";
+
+        setup();
+    }
+
+    void AnimationPanel::setup() {
         onAdd();
+
         m_messageDispatcher.onMessage<bool>(MessageID::AnimationPanelLoadXml, [this](bool) {
-           m_animationNames.clear();
-           m_currentName = "";
-           m_currentAnimation = 0;
-           m_lastCurrentAnimation = 0;
+            m_animationNames.clear();
+            m_currentName = "Default Animation";
+            m_addName = "";
+            m_currentAnimation = 0;
+            m_lastCurrentAnimation = 0;
         });
 
         m_messageDispatcher.onMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation,
                                                                  [this](const AnimationPanelLoadMessage& message) {
-            if(m_animationNames.empty())
-                m_currentName = message.name;
-            m_animationNames.emplace_back(message.name);
-        });
+                                                                     if(m_animationNames.empty())
+                                                                         m_currentName = message.name;
+                                                                     m_animationNames.emplace_back(message.name);
+                                                                 });
     }
 
+
     void AnimationPanel::update(float dt) {
+        (void)dt;
         robot2D::WindowOptions windowOptions = robot2D::WindowOptions {
                 {
                         {ImGuiStyleVar_WindowPadding, {0, 0}}
@@ -168,6 +178,9 @@ namespace viewer {
         checkMouseHover();
 
         InputText("Name", &m_currentName, 0, nullptr, nullptr);
+        if(m_currentAnimation >= 0 && !m_animationNames.empty() && m_currentName != m_animationNames[m_currentAnimation])
+            m_animationNames[m_currentAnimation] = m_currentName;
+
         static bool needShowModal = false;
         colorButton("Add", []() {
             needShowModal = true;
@@ -181,7 +194,7 @@ namespace viewer {
             if(ImGui::BeginPopupModal("Add Animation", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
                 ImGui::Text("Enter animation's name");
                 ImGui::Separator();
-                InputText("Name", &m_currentName, 0, nullptr, nullptr);
+                InputText("Name", &m_addName, 0, nullptr, nullptr);
                 if (ImGui::Button("Cancel", ImVec2(120, 0))) { needShowModal = false; ImGui::CloseCurrentPopup(); }
                 ImGui::SetItemDefaultFocus();
                 ImGui::SameLine();
@@ -191,8 +204,8 @@ namespace viewer {
         }
 
         ImGui::LabelText("Frame count ", "%i", m_animation ? m_animation -> getFramesCount() : 0);
-        if(m_animation)
-            if (!ImGui::SliderFloat("Speed", &m_animation -> getSpeed(), min_value, max_value)) {}
+        if(m_animation && m_animation -> getSpeed())
+            if (!ImGui::SliderInt("Speed", m_animation -> getSpeed(), min_value, max_value)) {}
 
         float spacing = ImGui::GetStyle().ItemInnerSpacing.x;
         ImGui::PushButtonRepeat(true);
@@ -246,8 +259,8 @@ namespace viewer {
 
     void AnimationPanel::onAdd() {
         auto* msg = m_messageBus.postMessage<AddAnimationMessage>(MessageID::AddAnimation);
-        msg -> name = m_currentName;
-        m_animationNames.emplace_back(m_currentName);
+        msg -> name = m_addName;
+        m_animationNames.emplace_back(m_addName);
         m_currentAnimation = m_animationNames.size() - 1;
         m_lastCurrentAnimation = m_currentAnimation;
         m_currentName = m_animationNames[m_currentAnimation];
@@ -275,6 +288,5 @@ namespace viewer {
         m_currentName = m_animationNames[switchIndex];
         msg -> switchToIndex = switchIndex;
     }
-
 
 } // namespace viewer

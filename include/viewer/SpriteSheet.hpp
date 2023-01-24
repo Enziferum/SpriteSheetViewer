@@ -41,7 +41,7 @@ namespace viewer {
                 return !m_animations[0].valid();
         }
 
-        const std::string& getTexturePath() const {return m_texturePath;}
+        const std::string& getTexturePath() const { return m_texturePath; }
     private:
         std::string m_texturePath;
         std::vector<Animation> m_animations;

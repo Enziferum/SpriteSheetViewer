@@ -25,13 +25,16 @@ namespace viewer {
         ~ViewerScene() override = default;
 
         void setup(robot2D::RenderWindow* window);
-        void updateAnimation(ViewerAnimation* animation) override;
-        void onLoadImage(robot2D::Image &&image) override;
-        robot2D::Color getImageMaskColor() const override { return m_View.getImageMaskColor();}
-
         void handleEvents(const robot2D::Event& event);
         void update(float dt);
         void render();
+
+        void updateAnimation(ViewerAnimation* animation) override;
+        void onLoadImage(robot2D::Image &&image) override;
+        std::pair<bool, robot2D::vec2f>
+        onLoadAnimation(robot2D::Image&& image, const viewer::AnimationList& animationList) override;
+
+        robot2D::Color getImageMaskColor() const override { return m_View.getImageMaskColor();}
     private:
         /// on Event
         void onMousePressed(const robot2D::Event& event);

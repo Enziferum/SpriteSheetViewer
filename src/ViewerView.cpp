@@ -92,23 +92,13 @@ namespace viewer {
         m_sprite = m_animatedSprite;
     }
 
-    void ViewerView::onLoadXml(const LoadXmlMessage& message) {
+    bool ViewerView::insideView(const robot2D::IntRect& region) const {
+        return contains(m_sprite.getGlobalBounds(), region);
+    }
+
+    std::pair<bool, robot2D::vec2f> ViewerView::onLoadAnimation(robot2D::Image&& image, const AnimationList& animationList) {
         sheetAnimation.reset();
-        m_spriteSheet.removeAll();
-
-        if(!m_spriteSheet.loadFromFile(message.filePath)) {
-            RB_ERROR("Can't setup sprite sheet by path: {0}", message.filePath);
-            return;
-        }
-
-        fs::path path{message.filePath};
-        path.remove_filename();
-        path.assign(m_spriteSheet.getTexturePath());
-
-        if(!m_texture.loadFromFile(path.string())) {
-            RB_ERROR("Can't setup texture by path: {0}", message.filePath);
-            return;
-        }
+        m_texture.create(image);
 
         auto& textureSize = m_texture.getSize();
         m_animatedSprite.setTexture(m_texture, {0, 0,
@@ -125,23 +115,7 @@ namespace viewer {
 
         m_animatedSprite.setPosition(spritePosition);
         m_sprite = m_animatedSprite;
-
-//        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
-//        for(const auto& animation: m_spriteSheet.getAnimations()) {
-//            m_animations.emplace_back(ViewerAnimation{animation, spritePosition});
-//            auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
-//            msg -> name = animation.title;
-//        }
-//
-//        auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
-//        auto& animationPanel = m_panelManager.getPanel<AnimationPanel>();
-//        auto* sheet = viewerPanel.getSpriteSheetAnimation();
-//        if(sheet)
-//            sheet -> setAnimation(m_animations[m_currentAnimation].getAnimation());
-    }
-
-    bool ViewerView::insideView(const robot2D::IntRect& region) const {
-        return contains(m_sprite.getGlobalBounds(), region);
+        return {true, spritePosition};
     }
 
 }

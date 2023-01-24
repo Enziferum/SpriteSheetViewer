@@ -216,7 +216,11 @@ namespace viewer {
         if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
             auto rect = m_selectCollider.getRect();
             if(m_View.insideView({rect.lx, rect.ly, rect.width, rect.height}))
-                m_Manager.cutFrames(m_selectCollider.getRect(), m_View.getPosition());
+                m_Manager.processFrames(
+                        m_selectCollider.getRect(),
+                        m_View.getPosition(),
+                        m_View.getImage()
+                );
         }
 
         if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
@@ -269,6 +273,11 @@ namespace viewer {
 
     void ViewerScene::onLoadImage(robot2D::Image&& image) {
         m_View.onLoadImage(std::move(image));
+    }
+
+    std::pair<bool, robot2D::vec2f>
+    ViewerScene::onLoadAnimation(robot2D::Image&& image, const AnimationList& animationList) {
+        return m_View.onLoadAnimation(std::move(image), animationList);
     }
 
 }

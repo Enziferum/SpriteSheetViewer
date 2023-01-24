@@ -11,13 +11,9 @@ namespace viewer {
         ~MenuPanel() override = default;
 
         void update(float dt) override;
-        void setSpriteSheetAnimation(const SpriteSheetAnimation* spriteSheet) {
-            m_animation = spriteSheet;
-        }
     private:
         void showFileMenu();
     private:
         robot2D::MessageBus& m_messageBus;
-        const SpriteSheetAnimation* m_animation;
     };
 }

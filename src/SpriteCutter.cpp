@@ -33,13 +33,13 @@ namespace viewer {
     }
 
     std::vector<std::vector<SpriteCutter::colorPoint>>
-    SpriteCutter::packColorMap(const robot2D::UIntRect& clipRegion, robot2D::Texture& texture,
+    SpriteCutter::packColorMap(const robot2D::UIntRect& clipRegion, robot2D::Image& image,
                                robot2D::vec2f worldPosition) {
 
-        auto* pixelBuffer = texture.getPixels();
+        auto* pixelBuffer = image.getBuffer();
         std::vector<std::vector<colorPoint>> colorPoints;
 
-        auto size = texture.getSize();
+        auto size = image.getSize();
         robot2D::vec2i localPosition = {clipRegion.lx - worldPosition.x, clipRegion.ly - worldPosition.y};
 
         int channelsNum = 4;
@@ -288,17 +288,17 @@ namespace viewer {
     }
 
     std::vector<robot2D::IntRect>
-    SpriteCutter::cutFrames(const robot2D::UIntRect& clipRegion, robot2D::Texture& texture, robot2D::vec2f worldPosition) {
+    SpriteCutter::cutFrames(const robot2D::UIntRect& clipRegion, robot2D::Image& image, robot2D::vec2f worldPosition) {
 
         std::vector<robot2D::IntRect> frames;
-        auto&& colorsPoints = packColorMap(clipRegion, texture, worldPosition);
+        auto&& colorsPoints = packColorMap(clipRegion, image, worldPosition);
 
         auto isTransparent = [](const robot2D::Color& color) -> bool {
             return color.alpha == 255;
         };
 
-        robot2D::Image image;
-        image.create(texture.getSize(), texture.getPixels(), texture.getColorFormat());
+        robot2D::Image tmpImage;
+        tmpImage.create(image.getSize(), image.getBuffer(), image.getColorFormat());
 
         for(int i = 0; i < colorsPoints.size(); ++i) {
             const auto& line = colorsPoints[i];

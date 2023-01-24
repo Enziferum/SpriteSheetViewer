@@ -4,11 +4,6 @@
 #include <viewer/SpriteSheet.hpp>
 #include "TinyXML/tinyxml.h"
 
-namespace {
-    constexpr char* headTag = "sprites";
-    constexpr char* animationTag = "animation";
-}
-
 namespace viewer {
 
     class ILoader {
@@ -24,48 +19,80 @@ namespace viewer {
         ~XmlLoader() override = default;
 
         bool loadFromFile(const std::string& path, std::string& texturePath, AnimationList& animations) override {
+
+            m_keys = {
+                    { XmlKey::image, "image"},
+                    { XmlKey::maskColor, "maskColor"},
+                    { XmlKey::title, "title"},
+                    { XmlKey::delay, "delay"},
+                    { XmlKey::head, "sprites"},
+                    { XmlKey::cut, "cut"},
+                    { XmlKey::animation, "animation"},
+                    { XmlKey::x_coord, "x"},
+                    { XmlKey::y_coord, "y"},
+                    { XmlKey::width, "w"},
+                    { XmlKey::height, "h"},
+            };
+
             const char* p = path.c_str();
             TiXmlDocument document(p);
             if (!document.LoadFile())
                 return false;
 
-            TiXmlElement* head = document.FirstChildElement(headTag);
+            TiXmlElement* head = document.FirstChildElement(m_keys[XmlKey::head].c_str());
             if(!head)
                 return false;
 
-            texturePath = head ->Attribute("image");
+            texturePath = head -> Attribute(m_keys[XmlKey::image].c_str());
+            std::string maskColor = head -> Attribute(m_keys[XmlKey::maskColor].c_str());
 
-            TiXmlElement* animation = head -> FirstChildElement(animationTag);
+            TiXmlElement* animation = head -> FirstChildElement(m_keys[XmlKey::animation].c_str());
             if(!animation)
                 return false;
 
             while(animation) {
                 Animation anim;
-                anim.title = animation -> Attribute("title");
-                animation -> Attribute("delay", &anim.delay);
-                std::cout << "Start Process animation := " << anim.title << " delay := " << anim.delay << std::endl;
-                TiXmlElement* cut = animation -> FirstChildElement("cut");
+                anim.title = animation -> Attribute(m_keys[XmlKey::title].c_str());
+                animation -> Attribute(m_keys[XmlKey::delay].c_str(), &anim.delay);
+                RB_INFO("Start process animation, title: {0}, delay: {1}", anim.title, anim.delay);
+
+                TiXmlElement* cut = animation -> FirstChildElement(m_keys[XmlKey::cut].c_str());
                 if(!cut)
                     return false;
 
                 while (cut) {
                     robot2D::IntRect frame;
-                    cut -> Attribute("x", &frame.lx);
-                    cut -> Attribute("y", &frame.ly);
-                    cut -> Attribute("w", &frame.width);
-                    cut -> Attribute("h", &frame.height);
+                    cut -> Attribute(m_keys[XmlKey::x_coord].c_str(), &frame.lx);
+                    cut -> Attribute(m_keys[XmlKey::y_coord].c_str(), &frame.ly);
+                    cut -> Attribute(m_keys[XmlKey::width].c_str(), &frame.width);
+                    cut -> Attribute(m_keys[XmlKey::height].c_str(), &frame.height);
                     anim.frames.emplace_back(frame);
                     anim.flip_frames.emplace_back(robot2D::IntRect(frame.lx + frame.width, frame.ly, -frame.width,
                                                                    frame.height));
                     cut = cut->NextSiblingElement();
                 }
                 animation = animation -> NextSiblingElement();
-                std::cout << "Animation reading finish, got " << anim.frames.size() << " frames" << std::endl;
+                RB_INFO("Animation reading finish, got : {0} frames", anim.frames.size());
                 animations.emplace_back(anim);
             }
 
             return true;
         }
+    private:
+        enum class XmlKey {
+            image,
+            maskColor,
+            head,
+            animation,
+            cut,
+            title,
+            delay,
+            x_coord,
+            y_coord,
+            width,
+            height
+        };
+        std::unordered_map<XmlKey, std::string> m_keys;
     };
 
     std::unique_ptr<ILoader> getLoader() {

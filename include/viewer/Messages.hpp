@@ -16,6 +16,7 @@ namespace viewer {
         LoadXml,
         AnimationPanelLoadXml,
         AnimationPanelAddAnimation,
+        AnimationPanelReset
     };
 
     struct AddAnimationMessage {

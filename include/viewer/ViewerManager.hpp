@@ -9,12 +9,6 @@
 
 namespace viewer {
     class ISceneView;
-    class IViewerManager {
-    public:
-        virtual ~IViewerManager() = 0;
-        virtual void setupMessages();
-    };
-
     class ViewerManager {
     public:
         ViewerManager(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher);
@@ -22,8 +16,9 @@ namespace viewer {
 
         void setup(ISceneView* view);
 
-        void cutFrames(const robot2D::FloatRect& clipRegion,
-                       const robot2D::vec2f& worldPosition);
+        void processFrames(const robot2D::FloatRect& clipRegion,
+                           const robot2D::vec2f& worldPosition,
+                           robot2D::Image& image);
 
         void setCollider(const robot2D::FloatRect& collidingRect);
         Collider& getCollider(int index);
@@ -49,7 +44,7 @@ namespace viewer {
         CommandStack m_commandStack;
         std::vector<ViewerAnimation> m_animations;
 
-        int updateIndex = -1;
+        int m_updateIndex = -1;
         int m_currentAnimation = -1;
     };
-}
+} // namespace viewer

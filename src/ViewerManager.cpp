@@ -1,13 +1,19 @@
 #include <viewer/ViewerManager.hpp>
 #include <viewer/AnimationIO.hpp>
-#include <viewer/ISceneView.hpp>
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
+#include <viewer/ISceneView.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
 #include <viewer/commands/DeleteFrameCommand.hpp>
+#include <filesystem>
 
 namespace viewer {
+
+    namespace {
+        constexpr int NO_INDEX = -1;
+    }
+
     ViewerManager::ViewerManager(robot2D::MessageBus& messageBus,
                                  MessageDispatcher& messageDispatcher):
                                  m_messageBus{messageBus},
@@ -16,7 +22,9 @@ namespace viewer {
 
 
     void ViewerManager::setup(ISceneView* view) {
+        //assert(m_view != nullptr && "View must be not nullptr");
         m_view = view;
+
         m_messageDispatcher.onMessage<AddAnimationMessage>(MessageID::AddAnimation,
                                                            BIND_CLASS_FN(onAddAnimation));
 
@@ -29,6 +37,7 @@ namespace viewer {
 
         m_messageDispatcher.onMessage<DeleteAnimationMessage>(MessageID::DeleteAnimation,
                                                               BIND_CLASS_FN(onDeleteAnimation));
+
 
         m_messageDispatcher.onMessage<LoadImageMessage>(MessageID::LoadImage, BIND_CLASS_FN(onLoadImage));
 
@@ -52,6 +61,7 @@ namespace viewer {
         for(const auto& animation: m_animations)
             animations.emplace_back(animation.getAnimation());
         auto maskColor = m_view -> getImageMaskColor();
+        // TODO(a.raag): Get Texture Path
         if(!animationIo.saveToFile(message.filePath, "", maskColor, animations)) {
             RB_ERROR("Can't save animation");
         }
@@ -82,6 +92,7 @@ namespace viewer {
         }
 
         m_view -> onLoadImage(std::move(image));
+        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
     }
 
     void ViewerManager::onLoadXml(const LoadXmlMessage& message) {
@@ -89,8 +100,36 @@ namespace viewer {
         m_animations.clear();
 
         SpriteSheet spriteSheet;
-        if(!spriteSheet.loadFromFile(message.filePath)) {}
+        if(!spriteSheet.loadFromFile(message.filePath)) {
+            RB_ERROR("Can't load spriteSheet by path {0}", message.filePath);
+            return;
+        }
+
+        std::filesystem::path p{message.filePath};
+        p.remove_filename();
+        p.assign(spriteSheet.getTexturePath());
+
+        robot2D::Image image{};
+        if(!image.loadFromFile(p.string())) {
+            RB_ERROR("Can't load image by path {0}", p.string());
+            return;
+        }
+
+        auto result = m_view -> onLoadAnimation(std::move(image), spriteSheet.getAnimations());
+        if(!result.first)
+            return;
+
+        m_messageBus.postMessage<bool>(MessageID::AnimationPanelLoadXml);
+        for(const auto& animation: spriteSheet.getAnimations()) {
+            m_animations.emplace_back(ViewerAnimation{animation, result.second});
+            auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
+            msg -> name = animation.title;
+        }
+
+        m_view -> updateAnimation(&m_animations[m_currentAnimation]);
     }
+
+
 
     void ViewerManager::undo() {
         m_commandStack.undo();
@@ -101,35 +140,34 @@ namespace viewer {
     }
 
     void ViewerManager::deleteFrame() {
-        if(updateIndex != -1) {
-            auto frame = m_animations[m_currentAnimation][updateIndex];
-            m_animations[m_currentAnimation].eraseFrame(updateIndex);
+        if(m_updateIndex != NO_INDEX) {
+            auto frame = m_animations[m_currentAnimation][m_updateIndex];
+            m_animations[m_currentAnimation].eraseFrame(m_updateIndex);
 
             frame.borderColor = robot2D::Color::Green;
             m_commandStack.addCommand<DeleteFrameCommand>(
                     m_animations[m_currentAnimation],
                     frame,
-                    updateIndex
+                    m_updateIndex
             );
 
-            updateIndex = -1;
+            m_updateIndex = NO_INDEX;
             return;
         }
     }
 
-    void ViewerManager::cutFrames(const robot2D::FloatRect& clipRegion,
-                                  const robot2D::vec2f& worldPosition) {
-        auto dd = viewer::Collider{};
-        if(updateIndex == -1) {
-            dd.setRect(clipRegion);
-            if(dd.notZero() ) {
-//                auto&& frames = SpriteCutter{}.cutFrames(
-//                        {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
-//                        const_cast<robot2D::Texture &>(*m_animatedSprite.getTexture()),
-//                        worldPosition
-//                );
-
-                std::vector<robot2D::IntRect> frames;
+    void ViewerManager::processFrames(const robot2D::FloatRect& clipRegion,
+                                      const robot2D::vec2f& worldPosition,
+                                      robot2D::Image& image) {
+        auto collider = viewer::Collider{};
+        if(m_updateIndex == NO_INDEX) {
+            collider.setRect(clipRegion);
+            if(collider.notZero()) {
+                auto&& frames = SpriteCutter{}.cutFrames(
+                        {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
+                        image,
+                        worldPosition
+                );
 
                 frames.erase(
                         std::unique(frames.begin(), frames.end()),
@@ -137,33 +175,36 @@ namespace viewer {
                 std::sort(frames.begin(), frames.end());
 
                 for(const auto& frame: frames) {
-                    dd.setRect({frame.lx, frame.ly, frame.width, frame.height});
-                    m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
-                    m_animations[m_currentAnimation].addFrame(dd, worldPosition);
+                    collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                    m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
+                    m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                 }
-
-                dd.setRect(clipRegion);
-                m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], dd);
-                m_animations[m_currentAnimation].addFrame(dd, worldPosition);
             }
-        } else {
-            if(dd.notZero()) {
-                m_animations[m_currentAnimation][updateIndex].setRect(clipRegion);
-                m_animations[m_currentAnimation][updateIndex].showMovePoints = false;
+        }
+        else {
+            if(collider.notZero()) {
+                m_animations[m_currentAnimation][m_updateIndex].setRect(clipRegion);
+                m_animations[m_currentAnimation][m_updateIndex].showMovePoints = false;
             }
         }
     }
 
-    std::pair<bool, int> ViewerManager::getCollisionPair(const robot2D::vec2f &point) {
+    std::pair<bool, int> ViewerManager::getCollisionPair(const robot2D::vec2f& point) {
+        auto result = m_animations[m_currentAnimation].contains(point);
+        if(result.first)
+            m_updateIndex = result.second;
+        else
+            return {false, NO_INDEX};
         return m_animations[m_currentAnimation].contains(point);
     }
 
     void ViewerManager::setCollider(const robot2D::FloatRect& collidingRect) {
-        if(updateIndex >= 0)
-            m_animations[m_currentAnimation][updateIndex].setRect(collidingRect);
+        if(m_updateIndex >= 0)
+            m_animations[m_currentAnimation][m_updateIndex].setRect(collidingRect);
     }
 
     Collider& ViewerManager::getCollider(int index) {
+        //TODO(a.raag): Add asserts
         //assert(index < m_animations[m_currentAnimation].getSize());
         return m_animations[m_currentAnimation][index];
     }

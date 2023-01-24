@@ -409,7 +409,7 @@ void SpriteSheetClipper::handleEvents(const robot2D::Event& event) {
                     static_cast<unsigned int>(aabb.height)
             };
 
-            auto&& cuttedFrames = viewer::SpriteCutter{}.cutFrames(clipRegion, m_texture, {100, 100});
+            auto&& cuttedFrames = viewer::SpriteCutter{}.cutFrames(clipRegion, m_texture.getImage(), {100, 100});
 
             for(const auto& cut: cuttedFrames) {
                 viewer::Collider debugCollider{};
@@ -440,10 +440,6 @@ void SpriteSheetClipper::render() {
         m_window -> draw(obj);
     m_window -> afterRender();
 }
-
-
-
-
 
 int sandboxRun() {
     robot2D::EngineConfiguration engineConfiguration{};

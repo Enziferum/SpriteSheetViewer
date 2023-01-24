@@ -16,6 +16,8 @@ namespace viewer {
         void setAnimation(SpriteSheetAnimation* animation);
         void update(float dt) override;
     private:
+        void setup();
+
         void windowFunction();
         void onAdd();
         void onSave();
@@ -26,6 +28,7 @@ namespace viewer {
         SpriteSheetAnimation* m_animation{nullptr};
         std::vector<std::string> m_animationNames{};
         std::string m_currentName;
+        std::string m_addName;
         int m_currentAnimation = 0;
         int m_lastCurrentAnimation = -1;
     };

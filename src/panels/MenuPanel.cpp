@@ -1,5 +1,4 @@
 #include <filesystem>
-
 #include <robot2D/imgui/Api.hpp>
 
 #include <viewer/panels/MenuPanel.hpp>
@@ -9,7 +8,8 @@
 namespace viewer {
     namespace fs = std::filesystem;
 
-    MenuPanel::MenuPanel(robot2D::MessageBus& messageBus): IPanel(typeid(MenuPanel)),
+    MenuPanel::MenuPanel(robot2D::MessageBus& messageBus):
+    IPanel(typeid(MenuPanel)),
     m_messageBus{messageBus}{}
 
     void MenuPanel::update(float dt) {
@@ -32,14 +32,16 @@ namespace viewer {
 
             auto fspath = fs::path{path};
             if(fs::is_regular_file(fspath)) {
-                if(fspath.extension() == ".png" || ".PNG") {
+                if(fspath.extension() == ".png" || fspath.extension() == ".PNG") {
                     auto* msg = m_messageBus.postMessage<LoadImageMessage>(MessageID::LoadImage);
-                    msg -> filePath = std::move(path);
+                    msg -> filePath = fspath.string();
+                    return;
                 }
 
                 if(fspath.extension() == ".xml") {
                     auto* msg = m_messageBus.postMessage<LoadXmlMessage>(MessageID::LoadXml);
-                    msg -> filePath = std::move(path);
+                    msg -> filePath = fspath.string();
+                    return;
                 }
             }
         }

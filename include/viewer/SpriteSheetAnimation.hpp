@@ -7,7 +7,7 @@ namespace viewer {
     class SpriteSheetAnimation: public robot2D::Drawable {
     public:
         SpriteSheetAnimation();
-        ~SpriteSheetAnimation() = default;
+        ~SpriteSheetAnimation() override = default;
 
         void setAnimation(Animation& animation);
         void setAnimationRender(robot2D::Sprite& animationRender);
@@ -19,27 +19,14 @@ namespace viewer {
         [[nodiscard]] const int& getCurrentFrame() const;
         [[nodiscard]] size_t getFramesCount() const;
 
-        void setSpeed(const float& speed);
-        [[nodiscard]] const float& getSpeed() const;
-        float& getSpeed();
+        int* getSpeed();
 
         void reset();
 
-        void increaseVisibleFrames() {
-            if(!m_animation || !m_animation -> valid())
-                return;
-            if(m_visibleFrameCounts < m_animation -> frames.size())
-                ++m_visibleFrameCounts;
-        }
+        void increaseVisibleFrames();
+        void decreaseVisibleFrames();
 
-        void decreaseVisibleFrames() {
-            if(m_visibleFrameCounts > 0)
-                --m_visibleFrameCounts;
-        }
-
-        [[nodiscard]] const int& getVisibleFrameCounts() const {
-            return m_visibleFrameCounts;
-        }
+        [[nodiscard]] const int& getVisibleFrameCounts() const;
 
         void update(float dt);
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates) const override;
@@ -48,9 +35,8 @@ namespace viewer {
         robot2D::Sprite* m_animatedSprite;
 
         float m_currentFrame;
-        float m_speed;
         bool m_flip;
-        int m_visibleFrameCounts{-1};
+        int m_visibleFrameCounts{0};
     };
 
 } // namespace viewer

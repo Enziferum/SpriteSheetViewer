@@ -34,11 +34,12 @@ namespace viewer {
         SpriteCutter() = default;
         ~SpriteCutter() = default;
 
-        std::vector<robot2D::IntRect> cutFrames(const robot2D::UIntRect& clipRegion, robot2D::Texture& texture,
+        std::vector<robot2D::IntRect> cutFrames(const robot2D::UIntRect& clipRegion, robot2D::Image& image,
                                                 robot2D::vec2f worldPosition);
     private:
 
-        std::vector<std::vector<colorPoint>> packColorMap(const robot2D::UIntRect& clipRegion, robot2D::Texture& texture,
+        std::vector<std::vector<colorPoint>> packColorMap(const robot2D::UIntRect& clipRegion,
+                                                          robot2D::Image& image,
                                                           robot2D::vec2f worldPosition);
 
         std::vector<robot2D::vec2i> getNeighbors(robot2D::vec2i point, robot2D::Image& image);
