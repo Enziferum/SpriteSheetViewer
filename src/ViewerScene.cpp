@@ -200,11 +200,23 @@ namespace viewer {
             m_selectCollider.setRect(collider.getRect());
 
             if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
-                m_leftMousePressed = true;
-                collider.showMovePoints = true;
+                if(collider.state != Collider::State::Selected) {
+                    collider.showMovePoints = true;
+                }
             }
             else if(event.mouse.btn == robot2D::Mouse::MouseRight) {
-                collider.borderColor = robot2D::Color::Magenta;
+                switch(collider.state) {
+                    default:
+                        break;
+                    case Collider::State::Default:
+                        collider.state = Collider::State::Selected;
+                        collider.borderColor = robot2D::Color::Magenta;
+                        break;
+                    case Collider::State::Selected:
+                        collider.state = Collider::State::Default;
+                        collider.borderColor = robot2D::Color::Green;
+                        break;
+                }
             }
         }
         else {

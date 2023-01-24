@@ -4,7 +4,9 @@
 namespace viewer {
 
     ViewerAnimation::ViewerAnimation(const Animation& animation,
-                                     const robot2D::vec2f& worldPos): m_animation{animation} {
+                                     const robot2D::vec2f& worldPos):
+                                     m_animation{animation},
+                                     m_worldPos{worldPos} {
         for(const auto& frame: animation.frames) {
             auto dd = Collider{};
             dd.setRect({worldPos.x + frame.lx, worldPos.y + frame.ly}, {frame.width, frame.height});
@@ -54,8 +56,6 @@ namespace viewer {
     const Animation& ViewerAnimation::getAnimation() const {
         return m_animation;
     }
-
-
 
     void ViewerAnimation::addFrame(const Collider& collider) {
         m_colliders.emplace_back(collider);

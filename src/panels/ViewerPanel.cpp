@@ -40,10 +40,5 @@ namespace viewer {
         auto contentSize = ImGui::GetContentRegionAvail();
         robot2D::vec2f possibleImageSize = { contentSize.x, contentSize.y };
         robot2D::AnimatedImage(*render, possibleImageSize);
-
-        if(ImGui::Button("Play")) {
-            //m_animation -> play();
-        }
-
     }
 }

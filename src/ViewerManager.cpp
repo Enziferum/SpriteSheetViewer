@@ -147,14 +147,17 @@ namespace viewer {
     }
 
     void ViewerManager::deleteFrame() {
-        if(m_updateIndex != NO_INDEX) {
-            auto frame = m_animations[m_currentAnimation][m_updateIndex];
+        if(m_currentAnimation != NO_INDEX && m_updateIndex != NO_INDEX) {
+            auto collider = m_animations[m_currentAnimation][m_updateIndex];
+            if(collider.state != Collider::State::Selected)
+                return;
+
             m_animations[m_currentAnimation].eraseFrame(m_updateIndex);
 
-            frame.borderColor = robot2D::Color::Green;
+            collider.borderColor = robot2D::Color::Green;
             m_commandStack.addCommand<DeleteFrameCommand>(
                     m_animations[m_currentAnimation],
-                    frame,
+                    collider,
                     m_updateIndex
             );
 
@@ -189,9 +192,9 @@ namespace viewer {
             }
         }
         else {
-            if(collider.notZero()) {
+            m_animations[m_currentAnimation][m_updateIndex].showMovePoints = false;
+            if(collider.notZero() && collider.state == Collider::State::Moving) {
                 m_animations[m_currentAnimation][m_updateIndex].setRect(clipRegion);
-                m_animations[m_currentAnimation][m_updateIndex].showMovePoints = false;
             }
         }
     }

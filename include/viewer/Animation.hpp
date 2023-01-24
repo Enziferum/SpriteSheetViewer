@@ -26,7 +26,7 @@ namespace viewer {
 
         void eraseFrame(int index) {
             frames.erase(frames.begin() + index);
-            flip_frames.erase(frames.begin() + index);
+            flip_frames.erase(flip_frames.begin() + index);
         }
 
         bool valid() const {

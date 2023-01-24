@@ -8,6 +8,11 @@
 
 namespace viewer {
     struct Collider: public robot2D::Drawable {
+        enum class State {
+            Default,
+            Selected,
+            Moving
+        } state = State::Default;
 
         void setPosition(const robot2D::vec2f& position) {
             m_aabb.lx = position.x;
@@ -32,6 +37,10 @@ namespace viewer {
 
         void setRect(const robot2D::FloatRect& rect) {
             m_aabb = rect;
+        }
+
+        const robot2D::FloatRect& getRect() const {
+            return m_aabb;
         }
 
         bool contains(const robot2D::vec2f& point)  {
@@ -86,13 +95,9 @@ namespace viewer {
                     target.draw(q);
             }
         }
-
-        const robot2D::FloatRect& getRect() const {
-            return m_aabb;
-        }
-
-        float borderSize = 1.F;
+    public:
         robot2D::Color borderColor = robot2D::Color::Green;
+        float borderSize = 1.F;
         bool showMovePoints = {false};
     private:
         robot2D::FloatRect m_aabb{};
