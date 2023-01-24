@@ -1,5 +1,4 @@
 #include <viewer/ViewerManager.hpp>
-#include <viewer/AnimationIO.hpp>
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
 #include <viewer/ISceneView.hpp>
@@ -22,7 +21,6 @@ namespace viewer {
 
 
     void ViewerManager::setup(ISceneView* view) {
-        //assert(m_view != nullptr && "View must be not nullptr");
         m_view = view;
 
         m_messageDispatcher.onMessage<AddAnimationMessage>(MessageID::AddAnimation,
@@ -56,13 +54,12 @@ namespace viewer {
     }
 
     void ViewerManager::onSaveAnimations(const SaveAnimationsMessage& message) {
-        AnimationIO animationIo{};
+        SpriteSheet spriteSheet;
         AnimationList animations;
         for(const auto& animation: m_animations)
             animations.emplace_back(animation.getAnimation());
         auto maskColor = m_view -> getImageMaskColor();
-        // TODO(a.raag): Get Texture Path
-        if(!animationIo.saveToFile(message.filePath, "", maskColor, animations)) {
+        if(!spriteSheet.saveToFile(message.filePath, m_texturePath, maskColor, animations)) {
             RB_ERROR("Can't save animation");
         }
     }
@@ -88,6 +85,7 @@ namespace viewer {
         m_currentAnimation = NO_INDEX;
         m_updateIndex = NO_INDEX;
         m_animations.clear();
+        m_texturePath = message.filePath;
 
         robot2D::Image image{};
         if(!image.loadFromFile(message.filePath)) {
@@ -112,13 +110,11 @@ namespace viewer {
             return;
         }
 
-        std::filesystem::path p{message.filePath};
-        p.remove_filename();
-        p.assign(spriteSheet.getTexturePath());
+        m_texturePath = spriteSheet.getTexturePath();
 
         robot2D::Image image{};
-        if(!image.loadFromFile(p.string())) {
-            RB_ERROR("Can't load image by path {0}", p.string());
+        if(!image.loadFromFile(spriteSheet.getTexturePath())) {
+            RB_ERROR("Can't load image by path {0}", spriteSheet.getTexturePath());
             return;
         }
 
@@ -135,8 +131,6 @@ namespace viewer {
 
         m_view -> updateAnimation(&m_animations[m_currentAnimation]);
     }
-
-
 
     void ViewerManager::undo() {
         m_commandStack.undo();

@@ -46,5 +46,6 @@ namespace viewer {
 
         int m_updateIndex = -1;
         int m_currentAnimation = -1;
+        std::string m_texturePath;
     };
 } // namespace viewer
