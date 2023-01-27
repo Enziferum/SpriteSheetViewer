@@ -15,6 +15,11 @@
 namespace viewer {
     robot2D::Color selectColor = robot2D::Color::Green;
 
+    struct KeyInput {
+        //robot2D::Key getKey(const Action& action) const;
+    private:
+    };
+
     enum class KeyAction {
         FlipLeft,
         FlipRight,
@@ -156,6 +161,7 @@ namespace viewer {
             THROW("Can't bind KeyboardEvent callback");
         }
 
+
         // TODO(a.raag): make as window callback in future
         auto windowHandle = static_cast<GLFWwindow*>(m_window -> getRaw());
         glfwSetDropCallback(windowHandle, dropCallback);
@@ -167,20 +173,22 @@ namespace viewer {
 
     void ViewerScene::setup(robot2D::RenderWindow* window) {
         m_window = window;
+        m_Manager.setup(this);
 
         m_panelManager.addPanel<viewer::MenuPanel>(m_messageBus);
         m_panelManager.addPanel<viewer::ViewerPanel>();
+        m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_messageDispatcher, m_camera2D);
         m_panelManager.addPanel<viewer::AnimationPanel>(m_messageBus, m_messageDispatcher);
+
         auto winSize = m_window -> getSize();
         m_camera2D.resetViewport(winSize.as<float>());
 
         m_View.setup(winSize.as<int>(), &m_camera2D);
         m_frameBuffer = m_View.getFrameBuffer();
 
-        m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_camera2D);
         m_panelManager.getPanel<ScenePanel>().setFramebuffer(m_frameBuffer);
         m_panelManager.getPanel<AnimationPanel>().setAnimation(m_View.getAnimation());
-        m_Manager.setup(this);
+
 
         m_camera2D.setRenderTarget(m_window);
         m_window -> setMaximazed(true);
@@ -287,7 +295,7 @@ namespace viewer {
                 m_Manager.processFrames(
                         m_selectCollider.getRect(),
                         m_View.getPosition(),
-                        m_View.getImage()
+                        m_View.getImage(m_Manager.getCurrentTab())
                 );
         }
 
@@ -346,7 +354,7 @@ namespace viewer {
     }
 
 
-    void ViewerScene::updateAnimation(ViewerAnimation* animation) {
+    void ViewerScene::updateView(std::size_t tabIndex, ViewerAnimation* animation) {
         m_currentAnimation = animation;
         auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
         auto* sheet = viewerPanel.getSpriteSheetAnimation();
@@ -357,7 +365,6 @@ namespace viewer {
             else
                 sheet -> setAnimation(nullptr);
         }
-
     }
 
     void ViewerScene::onLoadImage(robot2D::Image&& image) {
@@ -369,4 +376,7 @@ namespace viewer {
         return m_View.onLoadAnimation(std::move(image));
     }
 
+    void ViewerScene::resetNames(const std::vector<std::string>& names) {
+        m_panelManager.getPanel<AnimationPanel>().resetNames(names);
+    }
 }

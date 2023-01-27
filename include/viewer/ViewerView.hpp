@@ -2,6 +2,7 @@
 
 #include <robot2D/Graphics/Sprite.hpp>
 #include <robot2D/Graphics/FrameBuffer.hpp>
+#include <robot2D/Util/ResourceHandler.hpp>
 
 #include "SpriteSheetAnimation.hpp"
 #include "MovableSprite.hpp"
@@ -32,7 +33,7 @@ namespace viewer {
         robot2D::FrameBuffer::Ptr getFrameBuffer() const { return m_frameBuffer; }
         robot2D::vec2f getPosition() { return m_animatedSprite.getPosition(); }
         robot2D::Color getImageMaskColor()const { return m_maskColor; }
-        robot2D::Image& getImage() { return m_texture.getImage(); }
+        robot2D::Image& getImage(std::size_t index) { return m_textures.get(index).getImage(); }
 
 
         void onLoadImage(robot2D::Image&& image);
@@ -42,7 +43,9 @@ namespace viewer {
     private:
         SpriteSheetAnimation sheetAnimation;
         robot2D::FrameBuffer::Ptr m_frameBuffer;
-        robot2D::Texture m_texture;
+        robot2D::ResourceHandler<robot2D::Texture, int> m_textures;
+        int m_currentIndex{0};
+
         robot2D::Sprite m_animatedSprite;
         MovableSprite m_sprite;
         SceneGrid m_sceneGrid;

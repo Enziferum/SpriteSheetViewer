@@ -14,6 +14,7 @@ namespace viewer {
 
     void MenuPanel::update(float dt) {
         (void)dt;
+//        ImGui::ShowDemoWindow();
         if(ImGui::BeginMainMenuBar()) {
             if(ImGui::BeginMenu("File")) {
                 showFileMenu();
@@ -24,6 +25,10 @@ namespace viewer {
     }
 
     void MenuPanel::showFileMenu() {
+        if(ImGui::MenuItem("New", "Ctrl+N")) {
+            m_messageBus.postMessage<NewTabMessage>(MessageID::NewTab);
+            return;
+        }
         if (ImGui::MenuItem("Open", "Ctrl+O")) {
             // "Save" nullptr, 0, nullptr, nullptr
             auto&& path = openFileDialog("Load", ".png", "");

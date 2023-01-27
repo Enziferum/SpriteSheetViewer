@@ -7,7 +7,10 @@
 
 namespace viewer {
     enum MessageID {
-        AddAnimation = robot2D::Message::Count,
+        NewTab = robot2D::Message::Count,
+        SwitchTab,
+        CloseTab,
+        AddAnimation,
         SwitchAnimation,
         DeleteAnimation,
         SaveAnimations,
@@ -15,7 +18,7 @@ namespace viewer {
         LoadImage,
         LoadXml,
         AnimationPanelLoad,
-        AnimationPanelAddAnimation,
+        AnimationPanelAddAnimation
     };
 
     struct AddAnimationMessage {
@@ -53,5 +56,16 @@ namespace viewer {
 
     struct AnimationPanelLoadEmptyMessage {
         bool needAddAnimation{false};
+    };
+
+    struct NewTabMessage {
+    };
+
+    struct SwitchTabMessage {
+        int switchToIndex;
+    };
+
+    struct CloseTabMessage {
+        int index;
     };
 }

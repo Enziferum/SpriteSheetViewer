@@ -1,16 +1,23 @@
 #include <robot2D/imgui/Api.hpp>
+#include <imgui/imgui_internal.h>
 
 #include <viewer/panels/ScenePanel.hpp>
 #include <viewer/Macro.hpp>
 #include <viewer/Messages.hpp>
 
 namespace viewer {
-
-    ScenePanel::ScenePanel(robot2D::MessageBus& messageBus, Camera2D& camera2D):
+    ScenePanel::ScenePanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher,Camera2D& camera2D):
         IPanel(typeid(ScenePanel)),
         m_messageBus{messageBus},
+        m_messageDispatcher{messageDispatcher},
         m_camera2D{camera2D} {
 
+        m_messageDispatcher.onMessage<NewTabMessage>(MessageID::NewTab,
+                                                         [this](const NewTabMessage& message) {
+           onNewTab();
+        });
+
+        m_messageBus.postMessage<NewTabMessage>(MessageID::NewTab);
     }
 
     void ScenePanel::update(float dt) {
@@ -25,8 +32,8 @@ namespace viewer {
                 },
                 {}
         };
-        windowOptions.flagsMask = ImGuiWindowFlags_NoScrollbar;
-        windowOptions.name = "##Scene";
+        windowOptions.flagsMask = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoTitleBar;
+        windowOptions.name = "Viewport";
         robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
     }
 
@@ -35,7 +42,44 @@ namespace viewer {
     }
 
     void ScenePanel::windowFunction() {
+        static bool opt_reorderable = false;
+        static ImGuiTabBarFlags opt_fitting_flags = ImGuiTabBarFlags_FittingPolicyDefault_;
+
+        auto* currentDockNode = ImGui::GetWindowDockNode();
+        currentDockNode -> LocalFlags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_NoTabBar
+                | ImGuiDockNodeFlags_NoDockingSplitMe | ImGuiDockNodeFlags_NoDockingSplitOther
+                | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther;
+        currentDockNode -> UpdateMergedFlags();
+
+        ImGuiTabBarFlags tab_bar_flags = (opt_fitting_flags) | (opt_reorderable ? ImGuiTabBarFlags_Reorderable : 0);
+        bool open = true;
+
+        if (ImGui::BeginTabBar("##tabs", tab_bar_flags))
+        {
+            for (int i = 0; i < m_tabNames.size(); ++i)
+            {
+                ImGuiTabItemFlags tab_flags = (false ? ImGuiTabItemFlags_UnsavedDocument : 0);
+                bool visible = ImGui::BeginTabItem(m_tabNames[i].c_str(), &open, tab_flags);
+                m_tabIndices[i] = visible;
+
+                if (visible)
+                {
+                    if(m_lastOpenIndex != i) {
+                        auto* msg = m_messageBus.postMessage<SwitchTabMessage>(MessageID::SwitchTab);
+                        msg -> switchToIndex = i;
+                        m_lastOpenIndex = i;
+                    }
+                    showScene();
+                    ImGui::EndTabItem();
+                }
+            }
+            ImGui::EndTabBar();
+        }
+    }
+
+    void ScenePanel::showScene() {
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
+        //auto viewportMinRegion = ImGui::GetContentRegionAvail();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
         m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x,
@@ -56,6 +100,13 @@ namespace viewer {
         }
 
         robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());
+    }
+
+    void ScenePanel::onNewTab() {
+        std::string newTabName = "Tab " + std::to_string(m_tabNames.size() + 1);
+        m_tabNames.emplace_back(std::move(newTabName));
+        m_tabIndices[m_tabNames.size() - 1] = true;
+        m_lastOpenIndex = m_tabNames.size() - 1;
     }
 
 } // namespace viewer

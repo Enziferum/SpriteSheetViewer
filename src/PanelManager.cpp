@@ -1,10 +1,12 @@
 #include <robot2D/imgui/Api.hpp>
 #include <viewer/PanelManager.hpp>
+#include <imgui/imgui_internal.h>
 
 namespace viewer {
 
     namespace {
         ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+        //ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_NoTabBar;
     }
 
     PanelManager::PanelManager(): m_panels{} {}

@@ -15,6 +15,11 @@ namespace viewer {
         AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher);
         ~AnimationPanel() override = default;
 
+        void resetNames(const std::vector<std::string>& currentNames) {
+            m_animationNames = currentNames;
+            m_currentAnimation = 0;
+            m_lastCurrentAnimation = 0;
+        }
 
         void setAnimation(SpriteSheetAnimation* animation);
         void update(float dt) override;
@@ -30,6 +35,7 @@ namespace viewer {
 
         void onLoad(const AnimationPanelLoadEmptyMessage& message);
         void onLoadAnimation(const AnimationPanelLoadMessage& message);
+        void onSwitchTab(const SwitchTabMessage& message);
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;

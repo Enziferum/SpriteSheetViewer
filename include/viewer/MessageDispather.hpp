@@ -58,11 +58,11 @@ namespace viewer {
             if(!ptr)
                 return;
             m_functions.template emplace(std::pair<robot2D::Message::ID,
-                            IFunction::Ptr>(messageId, std::move(ptr)));
+                    IFunction::Ptr>(messageId, std::move(ptr)));
         }
 
         void process(const robot2D::Message& message);
     private:
-        std::unordered_map<robot2D::Message::ID, IFunction::Ptr> m_functions;
+        std::unordered_multimap<robot2D::Message::ID, IFunction::Ptr> m_functions;
     };
 } // namespace viewer

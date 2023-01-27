@@ -29,10 +29,13 @@ namespace viewer {
         void update(float dt);
         void render();
 
-        void updateAnimation(ViewerAnimation* animation) override;
+        void updateView(std::size_t tabIndex, ViewerAnimation* animation) override;
         void onLoadImage(robot2D::Image &&image) override;
         std::pair<bool, robot2D::vec2f>
+
         onLoadAnimation(robot2D::Image&& image) override;
+        void resetNames(const std::vector<std::string>& names) override;
+
 
         robot2D::Color getImageMaskColor() const override { return m_View.getImageMaskColor();}
     private:
