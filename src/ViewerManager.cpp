@@ -2,16 +2,13 @@
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
 #include <viewer/ISceneView.hpp>
+#include <viewer/Defines.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
 #include <viewer/commands/DeleteFrameCommand.hpp>
-#include <filesystem>
+
 
 namespace viewer {
-
-    namespace {
-        constexpr int NO_INDEX = -1;
-    }
 
     ViewerManager::ViewerManager(robot2D::MessageBus& messageBus,
                                  MessageDispatcher& messageDispatcher):
@@ -60,7 +57,8 @@ namespace viewer {
             animations.emplace_back(animation.getAnimation());
         auto maskColor = m_view -> getImageMaskColor();
         if(!spriteSheet.saveToFile(message.filePath, m_texturePath, maskColor, animations)) {
-            RB_ERROR("Can't save animation");
+            RB_CRITICAL("Can't save animation");
+            THROW("Can't save animation");
         }
     }
 
@@ -90,7 +88,7 @@ namespace viewer {
         robot2D::Image image{};
         if(!image.loadFromFile(message.filePath)) {
             RB_ERROR("Can't load image by path {0}", message.filePath);
-            return;
+            THROW("Can't load image by path");
         }
 
         m_view -> onLoadImage(std::move(image));
@@ -107,7 +105,7 @@ namespace viewer {
         SpriteSheet spriteSheet;
         if(!spriteSheet.loadFromFile(message.filePath)) {
             RB_ERROR("Can't load spriteSheet by path {0}", message.filePath);
-            return;
+            THROW("Can't load spriteSheet by path");
         }
 
         m_texturePath = spriteSheet.getTexturePath();
@@ -115,10 +113,10 @@ namespace viewer {
         robot2D::Image image{};
         if(!image.loadFromFile(spriteSheet.getTexturePath())) {
             RB_ERROR("Can't load image by path {0}", spriteSheet.getTexturePath());
-            return;
+            THROW("Can't load image by path");
         }
 
-        auto result = m_view -> onLoadAnimation(std::move(image), spriteSheet.getAnimations());
+        auto result = m_view -> onLoadAnimation(std::move(image));
         if(!result.first)
             return;
 
@@ -208,8 +206,7 @@ namespace viewer {
     }
 
     Collider& ViewerManager::getCollider(int index) {
-        //TODO(a.raag): Add asserts
-        //assert(index < m_animations[m_currentAnimation].getSize());
+        assert(index < m_animations[m_currentAnimation].size());
         return m_animations[m_currentAnimation][index];
     }
 

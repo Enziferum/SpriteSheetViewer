@@ -1,9 +1,9 @@
 #pragma once
 
-#include <robot2D/Graphics/FrameBuffer.hpp>
 #include <utility>
-#include <viewer/Camera2D.hpp>
 #include <robot2D/Core/MessageBus.hpp>
+#include <robot2D/Graphics/FrameBuffer.hpp>
+#include <viewer/Camera2D.hpp>
 #include "IPanel.hpp"
 
 namespace viewer {

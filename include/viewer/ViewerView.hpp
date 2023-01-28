@@ -36,7 +36,7 @@ namespace viewer {
 
 
         void onLoadImage(robot2D::Image&& image);
-        std::pair<bool, robot2D::vec2f> onLoadAnimation(robot2D::Image&& image, const viewer::AnimationList& animationList);
+        std::pair<bool, robot2D::vec2f> onLoadAnimation(robot2D::Image&& image);
         bool insideView(const robot2D::IntRect& region) const;
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates) const override;
     private:

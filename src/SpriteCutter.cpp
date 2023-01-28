@@ -1,6 +1,6 @@
 #include <list>
 #include <viewer/SpriteCutter.hpp>
-#include <viewer/utils.hpp>
+#include <viewer/Utils.hpp>
 
 namespace viewer {
     template<typename T>
@@ -114,7 +114,6 @@ namespace viewer {
             res.push_back(Point(point.x + 1, point.y + 1));
         return res;
     }
-
 
     robot2D::IntRect SpriteCutter::splitPoints(std::set<robot2D::vec2i>& points) {
         if(points.empty())
@@ -239,7 +238,7 @@ namespace viewer {
                     break;
                 }
 
-                if(contains(copyFrame, frame))
+                if(util::contains(copyFrame, frame))
                     break;
             }
         }
@@ -247,7 +246,8 @@ namespace viewer {
         return filteredFrames;
     }
 
-    std::pair<std::vector<robot2D::IntRect>, bool> SpriteCutter::mergeOverlappingFrames(std::vector<robot2D::IntRect> frames) {
+    std::pair<std::vector<robot2D::IntRect>, bool>
+    SpriteCutter::mergeOverlappingFrames(std::vector<robot2D::IntRect> frames) {
         if(frames.size() <= 1)
             return {frames, false};
 

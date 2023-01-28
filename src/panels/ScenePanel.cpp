@@ -1,8 +1,8 @@
-#include <viewer/panels/ScenePanel.hpp>
-#include <viewer/macro.hpp>
-#include <viewer/Messages.hpp>
-
 #include <robot2D/imgui/Api.hpp>
+
+#include <viewer/panels/ScenePanel.hpp>
+#include <viewer/Macro.hpp>
+#include <viewer/Messages.hpp>
 
 namespace viewer {
 
@@ -25,8 +25,7 @@ namespace viewer {
                 },
                 {}
         };
-        // ImGuiWindowFlags_NoTitleBar
-        windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
+        windowOptions.flagsMask = ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "##Scene";
         robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
     }
@@ -44,9 +43,7 @@ namespace viewer {
         m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
                                 viewportMaxRegion.y + viewportOffset.y };
 
-        /// TODO(a.raag) switch mode of camera ///
         auto ViewPanelSize = ImGui::GetContentRegionAvail();
-
         if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
             m_ViewportSize = {ViewPanelSize.x, ViewPanelSize.y};
             m_framebuffer -> Resize(m_ViewportSize);

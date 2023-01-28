@@ -11,13 +11,17 @@ namespace viewer {
     class CommandStack {
     public:
         CommandStack() = default;
+        CommandStack(const CommandStack&) = delete;
+        CommandStack& operator=(const CommandStack&) = delete;
+        CommandStack(CommandStack&& ) = delete;
+        CommandStack& operator=(CommandStack&&) = delete;
         ~CommandStack() = default;
-
 
         template<typename T, typename ...Args>
         [[maybe_unused]]
         T* addCommand(Args&&... args);
 
+        [[maybe_unused]]
         void addCommand(ICommand::Ptr&& ptr);
 
         void undo();
@@ -34,7 +38,6 @@ namespace viewer {
     T* CommandStack::addCommand(Args&&...args) {
         static_assert(std::is_base_of_v<ICommand, T>);
         auto ptr = std::make_shared<T>(std::forward<Args>(args)...);
-        RB_INFO("Allocate command");
         assert(ptr != nullptr && "Command of Type T is nullptr");
         m_stack.push(ptr);
 

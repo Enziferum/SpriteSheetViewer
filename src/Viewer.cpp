@@ -6,13 +6,15 @@ namespace viewer {
     Viewer::Viewer():
     m_messageBus{},
     m_messageDispatcher{},
-    m_scene{m_messageBus, m_messageDispatcher}{}
+    m_scene{m_messageBus, m_messageDispatcher}
+    {}
 
     void Viewer::setup() {
         assert(m_window != nullptr && "RenderWindow must be available already.");
         m_gui.setup(*m_window);
         m_scene.setup(m_window);
         m_window -> setVsync(true);
+
         {
             robot2D::Image iconImage;
             iconImage.loadFromFile("res/logo.png");

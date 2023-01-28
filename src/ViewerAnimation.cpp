@@ -1,5 +1,6 @@
 #include <robot2D/Graphics/RenderTarget.hpp>
 #include <viewer/ViewerAnimation.hpp>
+#include <viewer/Defines.hpp>
 
 namespace viewer {
 
@@ -18,7 +19,7 @@ namespace viewer {
         for(int i = 0; i < static_cast<int>(m_colliders.size()); ++i)
             if(m_colliders[i].contains(point))
                 return {true, i};
-        return {false, -1};
+        return {false, NO_INDEX};
     }
 
     Collider& ViewerAnimation::operator[](std::size_t index) {

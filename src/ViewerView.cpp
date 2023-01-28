@@ -4,27 +4,9 @@
 #include <robot2D/Util/Logger.hpp>
 
 #include <viewer/ViewerView.hpp>
-#include <viewer/utils.hpp>
+#include <viewer/Utils.hpp>
 
 namespace viewer {
-    namespace {
-        void applyImageMask(robot2D::Image& image, robot2D::Color imageMask) {
-            auto colorFormat = image.getColorFormat();
-            assert(colorFormat == robot2D::ImageColorFormat::RGBA && "Avalable apply image mask only to RGBA color format");
-            auto* buffer = image.getBuffer();
-            assert(buffer != nullptr && "Load image before apply mask");
-            const auto& size = image.getSize();
-
-            for(int i = 0; i < static_cast<int>(size.x * size.y * 4); i += 4) {
-                if(buffer[i] == imageMask.red && buffer[i + 1] == imageMask.green && buffer[i + 2] == imageMask.blue) {
-                    buffer[i + 3] = 0;
-                }
-            }
-        }
-    }
-
-    namespace fs = std::filesystem;
-
     void ViewerView::setup(const robot2D::vec2i& windowSize, const Camera2D* camera2D)
     {
         m_camera2D = camera2D;
@@ -58,17 +40,15 @@ namespace viewer {
 
         target.beforeRender();
         target.setView(m_camera2D -> getCameraView());
-
         target.draw(m_sprite);
     }
 
     void ViewerView::processImage(const robot2D::vec2f& mousePos, const robot2D::vec2f& windowSize) {
-        auto convertedMousePos = m_camera2D -> mapPixelToCoords(mousePos, m_frameBuffer);
-        auto&& maskColor = readPixel({convertedMousePos.x, windowSize.y - convertedMousePos.y});
+        auto&& maskColor = util::readPixel({mousePos.x, windowSize.y - mousePos.y});
         m_maskColor = maskColor;
         robot2D::Image image{};
         image.create(m_texture.getSize(), m_texture.getPixels(), robot2D::ImageColorFormat::RGBA);
-        applyImageMask(image, maskColor);
+        util::applyImageMask(image, maskColor);
         m_texture.create(image);
     }
 
@@ -96,7 +76,7 @@ namespace viewer {
         return contains(m_sprite.getGlobalBounds(), region);
     }
 
-    std::pair<bool, robot2D::vec2f> ViewerView::onLoadAnimation(robot2D::Image&& image, const AnimationList& animationList) {
+    std::pair<bool, robot2D::vec2f> ViewerView::onLoadAnimation(robot2D::Image&& image) {
         sheetAnimation.reset();
         m_texture.create(image);
 

@@ -10,17 +10,17 @@ namespace viewer {
         ~SpriteSheetAnimation() override = default;
 
         void setAnimation(Animation* animation);
+        const Animation* getAnimation() const { return m_animation; }
         void setAnimationRender(robot2D::Sprite& animationRender);
         robot2D::Sprite* getAnimationRender();
 
         void setFlip(const bool& flag);
         [[nodiscard]] const bool& isFlipped() const;
 
-        [[nodiscard]] const int& getCurrentFrame() const;
+        [[nodiscard]] int getCurrentFrame() const;
         [[nodiscard]] size_t getFramesCount() const;
 
         int* getSpeed();
-
         void reset();
 
         void increaseVisibleFrames();

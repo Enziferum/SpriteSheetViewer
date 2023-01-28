@@ -31,4 +31,5 @@ namespace viewer {
         assert(ptr != nullptr && "Don't add nullptr command");
         m_stack.push(std::move(ptr));
     }
+
 } // namespace viewer

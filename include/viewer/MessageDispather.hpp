@@ -4,7 +4,7 @@
 #include <memory>
 
 #include <robot2D/Core/Message.hpp>
-#include "macro.hpp"
+#include "Macro.hpp"
 
 namespace viewer {
 
@@ -18,12 +18,11 @@ namespace viewer {
     template<typename Callback, typename CallbackFuncArg>
     class FunctionWrapper: public IFunction {
     public:
-        FunctionWrapper(Callback&& callback): m_callback{callback} {}
+        explicit FunctionWrapper(Callback&& callback): m_callback{callback} {}
         ~FunctionWrapper() override = default;
 
         void execute(const robot2D::Message& message) override {
             auto& data = message.getData<CallbackFuncArg>();
-            //std::forward<CallbackFuncArg>(data)
             m_callback(data);
         }
     private:
@@ -33,10 +32,11 @@ namespace viewer {
     template<typename Callback>
     class FunctionWrapper<Callback, void>: public IFunction {
     public:
-        FunctionWrapper(Callback&& callback): m_callback{callback} {}
+        explicit FunctionWrapper(Callback&& callback): m_callback{callback} {}
         ~FunctionWrapper() override = default;
 
         void execute(const robot2D::Message& message) override {
+            (void) message;
             m_callback();
         }
     private:

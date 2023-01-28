@@ -1,5 +1,5 @@
 /*
- Copyright (c) 2022 Alex Raag. All rights reserved.
+ Copyright (c) 2023 Alex Raag. All rights reserved.
  Use of this source code is governed by a BSD-style license that can be
  found in the LICENSE file.
 */
@@ -12,36 +12,11 @@
 
 #include <robot2D/Core/Event.hpp>
 
-#include "macro.hpp"
+#include "Macro.hpp"
 
 namespace robot2D {
-//    template<typename T>
-//    const T& eventAs(const robot2D::Event& event);
-//
-//    template<>
-//    const Event::MouseButtonEvent& eventAs(const robot2D::Event& event) {
-//        return event.mouse;
-//    }
-//
-//    template<>
-//    const Event::MouseWheelEvent& eventAs(const robot2D::Event& event) {
-//        return event.wheel;
-//    }
-//
-//    template<>
-//    const Event::MouseMoveEvent& eventAs(const robot2D::Event& event) {
-//        return event.move;
-//    }
-//
-//    template<>
-//    const Event::KeyboardEvent& eventAs(const robot2D::Event& event) {
-//        return event.key;
-//    }
-//
-//    template<>
-//    const Event::SizeEvent& eventAs(const robot2D::Event& event) {
-//        return event.size;
-//    }
+    template<typename T>
+    const T& eventAs(const robot2D::Event& event);
 }
 
 namespace viewer {
@@ -50,19 +25,19 @@ namespace viewer {
         struct IFunc {
             using Ptr = std::shared_ptr<IFunc>;
             virtual ~IFunc() = 0;
-
             virtual bool execute(const robot2D::Event& event) = 0;
         };
 
-        template<typename F,
-                typename = std::enable_if_t<std::is_invocable_v<F, const robot2D::Event&>>
+        template<typename F, typename EventT,
+                typename = std::enable_if_t<std::is_invocable_v<F, const EventT&>>
                 >
         struct Func: IFunc {
             explicit Func(F&& func): m_func{func} {}
             ~Func() override = default;
 
             bool execute(const robot2D::Event& event) override {
-                m_func(event);
+                const EventT& eventT = robot2D::eventAs<EventT>(event);
+                m_func(eventT);
                 return true;
             }
         private:
@@ -77,20 +52,24 @@ namespace viewer {
         ~EventBinder() = default;
 
 
-        template<typename F,
-                typename = std::enable_if_t<std::is_invocable_v<F, const robot2D::Event&>>>
-        void bindEvent(robot2D::Event::EventType eventType, F&& func) {
-            auto funcPtr = std::make_shared<Func<F>>(std::forward<F>(func));
+
+        template<typename EventT, typename F,
+                typename = std::enable_if_t<std::is_invocable_v<F, const EventT&>>>
+        [[nodiscard]]
+        bool bindEvent(robot2D::Event::EventType eventType, F&& func) {
+            auto funcPtr = std::make_shared<Func<F, EventT>>(std::forward<F>(func));
             if(!funcPtr)
-                return;
+                return false;
             m_events[eventType] = funcPtr;
+            return true;
         }
 
-        void unBind(robot2D::Event::EventType eventType) {
+        bool unBind(robot2D::Event::EventType eventType) {
             const auto& found = m_events.find(eventType);
             if(found == m_events.end())
-                return;
+                return false;
             m_events.erase(found);
+            return true;
         }
 
         // TODO(a.raag): try to execute not whole event

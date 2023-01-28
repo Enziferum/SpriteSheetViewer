@@ -1,7 +1,5 @@
 #pragma once
 
-#include "ICommand.hpp"
-
 namespace viewer {
-
+    #define NO_INDEX -1
 } // namespace viewer

@@ -6,6 +6,7 @@
 #include "Messages.hpp"
 #include "CommandStack.hpp"
 #include "ViewerAnimation.hpp"
+#include "Defines.hpp"
 
 namespace viewer {
     class ISceneView;
@@ -27,7 +28,6 @@ namespace viewer {
         void redo();
         void deleteFrame();
         std::pair<bool, int> getCollisionPair(const robot2D::vec2f& point);
-
     private:
         void onAddAnimation(const AddAnimationMessage& message);
         void onSwitchAnimation(const SwitchAnimationMessage& message);
@@ -39,13 +39,13 @@ namespace viewer {
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
-        ISceneView* m_view;
+        ISceneView* m_view{nullptr};
 
         CommandStack m_commandStack;
         std::vector<ViewerAnimation> m_animations;
 
-        int m_updateIndex = -1;
-        int m_currentAnimation = -1;
+        int m_updateIndex = NO_INDEX;
+        int m_currentAnimation = NO_INDEX;
         std::string m_texturePath;
     };
 } // namespace viewer

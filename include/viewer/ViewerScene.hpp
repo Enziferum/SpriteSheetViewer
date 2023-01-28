@@ -32,14 +32,15 @@ namespace viewer {
         void updateAnimation(ViewerAnimation* animation) override;
         void onLoadImage(robot2D::Image &&image) override;
         std::pair<bool, robot2D::vec2f>
-        onLoadAnimation(robot2D::Image&& image, const viewer::AnimationList& animationList) override;
+        onLoadAnimation(robot2D::Image&& image) override;
 
         robot2D::Color getImageMaskColor() const override { return m_View.getImageMaskColor();}
     private:
         /// on Event
-        void onMousePressed(const robot2D::Event& event);
-        void onMouseReleased(const robot2D::Event& event);
-        void onKeyboardPressed(const robot2D::Event& event);
+        void onMouseMoved(const robot2D::Event::MouseMoveEvent& event);
+        void onMousePressed(const robot2D::Event::MouseButtonEvent& event);
+        void onMouseReleased(const robot2D::Event::MouseButtonEvent& event);
+        void onKeyboardPressed(const robot2D::Event::KeyboardEvent& event);
     private:
         void setupResources();
         void setupBindings();
