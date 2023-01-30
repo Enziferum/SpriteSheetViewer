@@ -12,6 +12,11 @@ namespace viewer {
     class ISceneView;
     class ViewerManager {
     public:
+        enum class CutMode {
+            Manual = 0,
+            Automatic
+        };
+    public:
         ViewerManager(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher);
         ~ViewerManager() = default;
 
@@ -28,6 +33,7 @@ namespace viewer {
         void redo();
         void deleteFrame();
         std::pair<bool, int> getCollisionPair(const robot2D::vec2f& point);
+        void setCutMode() { if(m_cutMode == CutMode::Automatic) m_cutMode = CutMode::Manual; else m_cutMode = CutMode::Automatic;}
     private:
         void onAddAnimation(const AddAnimationMessage& message);
         void onSwitchAnimation(const SwitchAnimationMessage& message);
@@ -47,5 +53,6 @@ namespace viewer {
         int m_updateIndex = NO_INDEX;
         int m_currentAnimation = NO_INDEX;
         std::string m_texturePath;
+        CutMode m_cutMode = CutMode::Automatic;
     };
 } // namespace viewer

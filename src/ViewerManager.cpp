@@ -165,19 +165,25 @@ namespace viewer {
         if(m_updateIndex == NO_INDEX) {
             collider.setRect(clipRegion);
             if(collider.notZero()) {
-                auto&& frames = SpriteCutter{}.cutFrames(
-                        {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
-                        image,
-                        worldPosition
-                );
+                if(m_cutMode == CutMode::Automatic) {
+                    auto&& frames = SpriteCutter{}.cutFrames(
+                            {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
+                            image,
+                            worldPosition
+                    );
 
-                frames.erase(
-                        std::unique(frames.begin(), frames.end()),
-                        frames.end());
-                std::sort(frames.begin(), frames.end());
+                    frames.erase(
+                            std::unique(frames.begin(), frames.end()),
+                            frames.end());
+                    std::sort(frames.begin(), frames.end());
 
-                for(const auto& frame: frames) {
-                    collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                    for(const auto& frame: frames) {
+                        collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                        m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
+                        m_animations[m_currentAnimation].addFrame(collider, worldPosition);
+                    }
+                }
+                else {
                     m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
                     m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                 }

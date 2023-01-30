@@ -13,9 +13,9 @@ file(GLOB_RECURSE SRC src/*.cpp)
 
 add_subdirectory(ext/TinyXML)
 add_subdirectory(ext/robot2D-imgui)
-#add_subdirectory(ext/Profiler)
-#profiler
-set(LIBS robot2D robot2D_imgui tinyxml )
+add_subdirectory(ext/Profiler)
+
+set(LIBS robot2D robot2D_imgui Profiler tinyxml )
 
 add_executable(${PROJECT_NAME} ${SRC})
 target_link_libraries(${PROJECT_NAME} ${LIBS})
@@ -24,8 +24,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
         "$<INSTALL_INTERFACE:include>")
 
-add_custom_command(
-        TARGET ${PROJECT_NAME} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/res/
-        ${CMAKE_CURRENT_BINARY_DIR}/res/)
+#add_custom_command(
+#        TARGET ${PROJECT_NAME} POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy_directory
+#        ${CMAKE_CURRENT_SOURCE_DIR}/res/
+#        ${CMAKE_CURRENT_BINARY_DIR}/res/)

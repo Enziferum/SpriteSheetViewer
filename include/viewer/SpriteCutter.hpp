@@ -7,26 +7,6 @@
 #include <robot2D/Graphics/Rect.hpp>
 #include <robot2D/Graphics/Color.hpp>
 
-namespace robot2D {
-    using UIntRect = Rect<unsigned int>;
-
-    template<typename T>
-    bool operator<(const Vector2<T>& left, const Vector2<T>& right) {
-        return (left.x < right.x) && (left.y < right.y);
-    }
-
-    template<typename T>
-    bool operator<(const Rect<T>& left, const Rect<T>& right) {
-        return (left.lx < right.lx) && (left.ly < right.ly) && (left.width < right.width) && (left.height < right.height);
-    }
-
-    template<typename T>
-    bool operator>(const Vector2<T>& left, const Vector2<T>& right) {
-        return (left.x > right.x) && (left.y > right.y);
-    }
-}
-
-
 namespace viewer {
     class SpriteCutter {
     public:

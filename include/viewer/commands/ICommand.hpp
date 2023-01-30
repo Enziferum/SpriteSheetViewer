@@ -12,9 +12,11 @@ namespace viewer {
         [[nodiscard]]
         const CommandID& getCommandID() const { return m_commandID; }
 
+        void setCommandID(CommandID commandId) { m_commandID = commandId;}
+
         virtual void undo() = 0;
         virtual void redo();
     protected:
-        CommandID m_commandID{};
+        CommandID m_commandID{0};
     };
 } // namespace viewer

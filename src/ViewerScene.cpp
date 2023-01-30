@@ -4,8 +4,6 @@
 #include <viewer/Macro.hpp>
 #include <viewer/Defines.hpp>
 
-
-
 #include <viewer/panels/MenuPanel.hpp>
 #include <viewer/panels/ViewerPanel.hpp>
 #include <viewer/panels/ScenePanel.hpp>
@@ -23,7 +21,8 @@ namespace viewer {
         DeleteFrame,
         Undo,
         Redo,
-        Transparent
+        Transparent,
+        CutMode
     };
 
 
@@ -46,6 +45,7 @@ namespace viewer {
             {KeyAction::Undo, robot2D::Key::Z},
             {KeyAction::Redo, robot2D::Key::R},
             {KeyAction::Transparent, robot2D::Key::T},
+            {KeyAction::CutMode, robot2D::Key::M},
     };
 
     namespace fs = std::filesystem;
@@ -110,13 +110,13 @@ namespace viewer {
         */
 
         bool bindResult = false;
-
         bindResult = m_eventBinder.bindEvent<robot2D::Event::SizeEvent>(robot2D::Event::Resized,
                                                                         [this](const auto& event) {
             RB_INFO("New Size = {0} and {1}", event.widht, event.heigth);
-            m_window -> resize({event.widht, event.heigth});
-            m_camera2D.resetViewport({event.widht, event.heigth});
-            m_frameBuffer -> Resize({event.widht, event.heigth});
+            robot2D::vec2f newSize = {event.widht, event.heigth};
+            m_window -> resize(newSize.as<int>());
+            m_camera2D.resetViewport(newSize);
+            m_frameBuffer -> Resize(newSize.as<unsigned int>());
         });
 
         if(!bindResult) {
@@ -272,7 +272,7 @@ namespace viewer {
         else {
             if(event.btn != robot2D::Mouse::MouseMiddle) {
                 m_leftMousePressed = true;
-                m_selectCollider.setPosition({convertedPoint.x, convertedPoint.y});
+                m_selectCollider.setPosition(convertedPoint.as<float>());
             }
         }
     }
@@ -283,7 +283,7 @@ namespace viewer {
 
         if(event.btn != robot2D::Mouse::MouseMiddle) {
             auto rect = m_selectCollider.getRect();
-            if(m_View.insideView({rect.lx, rect.ly, rect.width, rect.height}))
+            if(m_View.insideView(rect.as<int>()))
                 m_Manager.processFrames(
                         m_selectCollider.getRect(),
                         m_View.getPosition(),
@@ -334,9 +334,13 @@ namespace viewer {
             mousePos -= bounds;
             mousePos = m_camera2D.mapPixelToCoords(mousePos, m_frameBuffer);
 
-            if(m_View.insideView({static_cast<int>(mousePos.x),
-                                  static_cast<int>(mousePos.y), 1, 1}))
+            if(m_View.insideView( { mousePos.as<int>(), {1, 1} }))
                 m_View.processImage(mousePos, sz.as<float>());
+            return;
+        }
+
+        if(event.code == m_inputMap[KeyAction::CutMode]) {
+            m_Manager.setCutMode();
             return;
         }
     }

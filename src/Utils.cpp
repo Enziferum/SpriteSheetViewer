@@ -14,15 +14,6 @@ namespace viewer::util {
         };
     }
 
-    bool contains(const robot2D::IntRect& l, const robot2D::IntRect& r) {
-        if (l.lx <= r.lx && l.ly <= r.ly
-            && (l.lx + l.width) >= (r.lx + r.width)
-            && (l.ly + l.height) >= (r.ly + r.height))
-            return true;
-        else
-            return false;
-    }
-
     void applyImageMask(robot2D::Image& image, robot2D::Color imageMask) {
         auto colorFormat = image.getColorFormat();
         assert(colorFormat == robot2D::ImageColorFormat::RGBA && "Avalable apply image mask only to RGBA color format");

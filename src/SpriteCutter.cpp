@@ -3,35 +3,6 @@
 #include <viewer/Utils.hpp>
 
 namespace viewer {
-    template<typename T>
-    bool intersectsRect(const robot2D::Rect<T>& l, const robot2D::Rect<T>& other) {
-        T minX = std::min(l.lx, static_cast<T>(l.lx + l.width));
-        T maxX = std::max(l.lx, static_cast<T>(l.lx + l.width));
-        T minY = std::min(l.ly, static_cast<T>(l.ly + l.height));
-        T maxY = std::max(l.ly, static_cast<T>(l.ly + l.height));
-
-        T minX2 = std::min(other.lx, static_cast<T>(other.lx + other.width));
-        T maxX2 = std::max(other.lx, static_cast<T>(other.lx + other.width));
-        T minY2 = std::min(other.ly, static_cast<T>(other.ly + other.height));
-        T maxY2 = std::max(other.ly, static_cast<T>(other.ly + other.height));
-
-        T innerLeft = std::max(minX, minX2);
-        T innerTop = std::max(minY, minY2);
-        T innerRight = std::min(maxX, maxX2);
-        T innerBottom = std::min(maxY, maxY2);
-
-        bool result = false;
-        if(((innerLeft <= innerRight) && (innerTop <= innerBottom))) {
-            //overlap = {innerLeft, innerTop, innerRight - innerLeft, innerBottom - innerTop};
-            result = true;
-        } else {
-            //overlap = {};
-            result = false;
-        }
-
-        return result;
-    }
-
     std::vector<std::vector<SpriteCutter::colorPoint>>
     SpriteCutter::packColorMap(const robot2D::UIntRect& clipRegion, robot2D::Image& image,
                                robot2D::vec2f worldPosition) {
@@ -171,7 +142,7 @@ namespace viewer {
         std::set<robot2D::vec2i> visited;
         std::vector<robot2D::vec2i> neighbors = getNeighbors(point, image);
 
-        auto isTransparent = [](const robot2D::Color& color) -> bool {
+        static const auto isTransparent = [](const robot2D::Color& color) -> bool {
             return color.alpha == 255;
         };
 
@@ -238,7 +209,7 @@ namespace viewer {
                     break;
                 }
 
-                if(util::contains(copyFrame, frame))
+                if(copyFrame.contains(frame))
                     break;
             }
         }
@@ -263,7 +234,7 @@ namespace viewer {
             for(auto& copyFrame: copyReversed) {
                 if(frame == copyFrame)
                     break;
-                if(intersectsRect(frame, copyFrame)) {
+                if(frame.intersects(copyFrame)) {
                     robot2D::IntRect unionFrame;
                     unionFrame.lx = std::min(frame.lx, copyFrame.lx);
                     unionFrame.ly = std::min(frame.ly, copyFrame.ly);

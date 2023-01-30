@@ -21,8 +21,12 @@ namespace viewer {
                                     robot2D::FrameBuffer::Ptr frameBuffer) const {
         robot2D::vec2f normalized;
         auto port = getViewport(frameBuffer -> getSpecification().size);
-        robot2D::FloatRect viewport = { static_cast<float>(port.lx),
-                                        static_cast<float>(port.lx), port.width, port.height};
+        robot2D::FloatRect viewport = {
+                static_cast<float>(port.lx),
+                static_cast<float>(port.lx),
+                static_cast<float>(port.width),
+                static_cast<float>(port.height)
+        };
         normalized.x = -1.f + 2.f * (static_cast<float>(point.x) - viewport.lx) / viewport.width;
         normalized.y = 1.f - 2.f * (static_cast<float>(point.y) - viewport.ly) / viewport.height;
 

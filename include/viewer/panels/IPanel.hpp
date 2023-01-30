@@ -5,8 +5,6 @@
 #include <typeindex>
 
 namespace viewer {
-
-
     using PanelID = std::type_index;
 
     class IPanel {
@@ -17,6 +15,7 @@ namespace viewer {
         virtual ~IPanel() = 0;
 
         virtual void update(float dt) = 0;
+        [[nodiscard]]
         PanelID getID() const {return m_id;}
 
         virtual bool isMouseOver() const { return m_mouseIsOver; }

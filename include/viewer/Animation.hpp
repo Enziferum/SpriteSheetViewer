@@ -13,15 +13,20 @@
 
 namespace viewer {
     struct Animation {
-        Animation() {}
+        Animation() = default;
         Animation(std::string title_, int delay_): title{title_}, delay{delay_} {}
         ~Animation() = default;
 
         void addFrame(const robot2D::FloatRect& frame) {
-            frames.emplace_back(robot2D::IntRect {frame.lx, frame.ly, frame.width, frame.height});
-            flip_frames.emplace_back(robot2D::IntRect{frame.lx + frame.width,
-                                                      frame.ly, -frame.width,
-                                                      frame.height});
+            frames.emplace_back(frame.as<int>());
+
+            robot2D::IntRect flipRect{
+                static_cast<int>(frame.lx + frame.width),
+                static_cast<int>(frame.ly),
+                static_cast<int>(-frame.width),
+                static_cast<int>(frame.height)
+            };
+            flip_frames.emplace_back(flipRect);
         }
 
         void eraseFrame(int index) {
@@ -29,6 +34,7 @@ namespace viewer {
             flip_frames.erase(flip_frames.begin() + index);
         }
 
+        [[nodiscard]]
         bool valid() const {
             bool a = frames.empty();
             bool b = flip_frames.empty();

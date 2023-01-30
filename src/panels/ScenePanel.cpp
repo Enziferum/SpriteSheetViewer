@@ -44,13 +44,15 @@ namespace viewer {
                                 viewportMaxRegion.y + viewportOffset.y };
 
         auto ViewPanelSize = ImGui::GetContentRegionAvail();
-        if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
-            m_ViewportSize = {ViewPanelSize.x, ViewPanelSize.y};
+        robot2D::vec2u viewSize = {static_cast<unsigned>(ViewPanelSize.x),
+                                   static_cast<unsigned>(ViewPanelSize.y)};
+        if(m_ViewportSize != viewSize) {
+            m_ViewportSize = viewSize;
             m_framebuffer -> Resize(m_ViewportSize);
             m_camera2D.resetViewport(m_ViewportSize.as<float>());
 
             auto* msg = m_messageBus.postMessage<SceneViewportMessage>(MessageID::SceneViewportSize);
-            msg -> newSize = {ViewPanelSize.x, ViewPanelSize.y};
+            msg -> newSize = viewSize.as<float>();
         }
 
         robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());

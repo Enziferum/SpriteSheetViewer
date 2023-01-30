@@ -4,17 +4,17 @@
 namespace viewer {
     DeleteFrameCommand::DeleteFrameCommand(
             ViewerAnimation& viewerAnimation,
-            Collider debugCollider,
+            Collider collider,
             std::size_t index):
             m_viewerAnimation{viewerAnimation},
-            m_debugCollider{debugCollider},
+            m_collider{collider},
             m_index{index}{}
 
     void DeleteFrameCommand::undo() {
-        m_viewerAnimation.addFrame(m_debugCollider, m_index);
+        m_viewerAnimation.addFrame(m_collider, m_index);
     }
 
     void DeleteFrameCommand::redo() {
-       // m_viewerAnimation.addFrame(m_debugCollider, m_index);
+       m_viewerAnimation.addFrame(m_collider, m_index);
     }
 } // namespace viewer

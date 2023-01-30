@@ -73,7 +73,7 @@ namespace viewer {
     }
 
     bool ViewerView::insideView(const robot2D::IntRect& region) const {
-        return contains(m_sprite.getGlobalBounds(), region);
+        return m_sprite.getGlobalBounds().contains(region);
     }
 
     std::pair<bool, robot2D::vec2f> ViewerView::onLoadAnimation(robot2D::Image&& image) {

@@ -41,8 +41,8 @@ namespace viewer {
                 },
                 {}
         };
-        // ImGuiWindowFlags_NoTitleBar
-        windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
+
+        windowOptions.flagsMask = ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "AnimationPanel";
 
         robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
@@ -50,16 +50,32 @@ namespace viewer {
 
 
     void AnimationPanel::windowFunction() {
-        checkMouseHover();
-
-        robot2D::InputText("Name", &m_currentName, 0, nullptr, nullptr);
-        if(m_currentAnimation >= 0 && !m_animationNames.empty() && m_currentName != m_animationNames[m_currentAnimation])
-            m_animationNames[m_currentAnimation] = m_currentName;
         static auto addButtonColors = {
                 robot2D::ColorButton{ robot2D::ColorButton::Type::Default, robot2D::Color::Black },
                 robot2D::ColorButton{ robot2D::ColorButton::Type::Hovered, robot2D::Color::Yellow },
                 robot2D::ColorButton{ robot2D::ColorButton::Type::Active, robot2D::Color::Yellow },
         };
+
+
+        static auto saveButtonColors = {
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Default, robot2D::Color::Black },
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Hovered, robot2D::Color::Green},
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Active, robot2D::Color::Green},
+        };
+
+        static auto deleteButtonColors = {
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Default, robot2D::Color::Black },
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Hovered, robot2D::Color::Red},
+                robot2D::ColorButton{ robot2D::ColorButton::Type::Active, robot2D::Color::Red },
+        };
+
+        checkMouseHover();
+
+        robot2D::InputText("Name", &m_currentName, 0, nullptr, nullptr);
+        if(m_currentAnimation >= 0 && !m_animationNames.empty() &&
+            m_currentName != m_animationNames[m_currentAnimation])
+            m_animationNames[m_currentAnimation] = m_currentName;
+
 
         colorButton("Add", addButtonColors, [this]() { m_needShowModal = true; });
 
@@ -90,7 +106,7 @@ namespace viewer {
 
         if (ImGui::BeginCombo("Animations", previewValue.c_str(), 0))
         {
-            for (int n = 0; n < m_animationNames.size(); ++n)
+            for (int n = 0; n < static_cast<int>(m_animationNames.size()); ++n)
             {
                 const bool is_selected = (m_currentAnimation == n);
                 if (ImGui::Selectable(m_animationNames[n].c_str(), is_selected)) {
@@ -100,7 +116,6 @@ namespace viewer {
                     m_currentName = m_animationNames[m_currentAnimation];
                 }
 
-                // Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
                 if (is_selected)
                     ImGui::SetItemDefaultFocus();
             }
@@ -110,18 +125,6 @@ namespace viewer {
         if(m_currentAnimation != m_lastCurrentAnimation) {
             m_lastCurrentAnimation = m_currentAnimation;
         }
-
-        static auto saveButtonColors = {
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Default, robot2D::Color::Black },
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Hovered, robot2D::Color::Green},
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Active, robot2D::Color::Green},
-        };
-
-        static auto deleteButtonColors = {
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Default, robot2D::Color::Black },
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Hovered, robot2D::Color::Red},
-                robot2D::ColorButton{ robot2D::ColorButton::Type::Active, robot2D::Color::Red },
-        };
 
         colorButton("Save", saveButtonColors, BIND_CLASS_FN(onSave));
         ImGui::SameLine();
@@ -136,7 +139,7 @@ namespace viewer {
         auto* msg = m_messageBus.postMessage<AddAnimationMessage>(MessageID::AddAnimation);
         msg -> name = m_addName;
         m_animationNames.emplace_back(m_addName);
-        m_currentAnimation = m_animationNames.size() - 1;
+        m_currentAnimation = static_cast<int>(m_animationNames.size() - 1);
         m_lastCurrentAnimation = m_currentAnimation;
         m_currentName = m_animationNames[m_currentAnimation];
     }

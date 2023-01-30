@@ -5,6 +5,7 @@
 #include <viewer/MessageDispather.hpp>
 #include <viewer/SpriteSheetAnimation.hpp>
 #include <viewer/Messages.hpp>
+#include <viewer/Defines.hpp>
 
 #include "IPanel.hpp"
 
@@ -37,7 +38,7 @@ namespace viewer {
         std::string m_currentName;
         std::string m_addName;
         int m_currentAnimation = 0;
-        int m_lastCurrentAnimation = -1;
+        int m_lastCurrentAnimation = NO_INDEX;
         bool m_needShowModal{false};
     };
 

@@ -7,7 +7,5 @@
 namespace viewer::util {
     robot2D::Color readPixel(robot2D::vec2f mousePos);
 
-    bool contains(const robot2D::IntRect& l, const robot2D::IntRect& r);
-
     void applyImageMask(robot2D::Image& image, robot2D::Color imageMask);
 } // namespace viewer::util
