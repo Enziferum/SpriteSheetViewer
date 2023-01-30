@@ -5,28 +5,15 @@
 
 namespace viewer {
     struct Quad: public robot2D::Drawable {
-        robot2D::FloatRect& getAABB() {
-            if(aabb == robot2D::FloatRect{})
-                aabb = {position.x, position.y, size.x, size.y};
-            return aabb;
-        }
 
+        [[nodiscard]]
+        robot2D::FloatRect getFrame() const;
         void draw(robot2D::RenderTarget& target,
-                  robot2D::RenderStates states) const override {
-            robot2D::Transform transform;
-            transform.translate(position);
-            transform.scale(size);
+                  robot2D::RenderStates states) const override;
 
-            states.transform *= transform;
-            states.color = color;
-            states.texture = texture;
-            target.draw(states);
-        }
-
-        robot2D::Color color;
         robot2D::vec2f position;
         robot2D::vec2f size;
+        robot2D::Color color;
         robot2D::Texture* texture{nullptr};
-        robot2D::FloatRect aabb;
     };
 }

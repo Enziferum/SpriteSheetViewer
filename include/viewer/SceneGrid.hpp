@@ -8,12 +8,12 @@
 
 namespace viewer {
 
-    struct Vertex {
+    struct GridVertex {
         robot2D::vec2f pos;
         robot2D::vec2f texCoord;
 
-        Vertex():pos{}, texCoord{}{}
-        Vertex(robot2D::vec2f p, robot2D::vec2f t):pos{p}, texCoord{t}{};
+        GridVertex():pos{}, texCoord{}{}
+        GridVertex(robot2D::vec2f p, robot2D::vec2f t):pos{p}, texCoord{t}{};
     };
 
     class SceneGrid {
@@ -32,7 +32,6 @@ namespace viewer {
         robot2D::Color m_two{};
 
         robot2D::VertexArray::Ptr m_vertexArray{nullptr};
-
-        std::array<Vertex, 4> m_vertices;
+        std::array<GridVertex, 4> m_vertices;
     };
 } // namespace viewer

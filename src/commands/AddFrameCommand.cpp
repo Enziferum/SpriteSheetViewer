@@ -3,12 +3,10 @@
 namespace viewer {
 
     AddFrameCommand::AddFrameCommand(ViewerAnimation& viewerAnimation,
-                                     Collider debugCollider):
+                                     Collider collider):
         m_viewerAnimation{viewerAnimation},
-        m_debugCollider{debugCollider}
-        {
-
-    }
+        m_debugCollider{collider}
+        {}
 
     void AddFrameCommand::undo() {
         m_viewerAnimation.eraseLastFrame();

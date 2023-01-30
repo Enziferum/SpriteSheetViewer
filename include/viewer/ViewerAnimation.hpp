@@ -19,6 +19,8 @@ namespace viewer {
         void addFrame(const Collider& collider);
         void addFrame(const Collider& collider, std::size_t index);
 
+        std::size_t size() const { return m_animation.frames.size(); }
+
         void eraseLastFrame();
         void eraseFrame(int index);
 

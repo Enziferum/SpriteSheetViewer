@@ -1,3 +1,6 @@
 [submodule "ext/robot2D-imgui"]
 	path = ext/robot2D-imgui
 	url = git@github.com:Enziferum/robot2D-imgui.git
+[submodule "ext/Profiler"]
+	path = ext/Profiler
+	url = git@github.com:Enziferum/Profiler.git

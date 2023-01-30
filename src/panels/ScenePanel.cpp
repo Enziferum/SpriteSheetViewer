@@ -1,8 +1,8 @@
-#include <viewer/panels/ScenePanel.hpp>
-#include <viewer/macro.hpp>
-#include <viewer/Messages.hpp>
-
 #include <robot2D/imgui/Api.hpp>
+
+#include <viewer/panels/ScenePanel.hpp>
+#include <viewer/Macro.hpp>
+#include <viewer/Messages.hpp>
 
 namespace viewer {
 
@@ -25,8 +25,7 @@ namespace viewer {
                 },
                 {}
         };
-        // ImGuiWindowFlags_NoTitleBar
-        windowOptions.flagsMask =  ImGuiWindowFlags_NoScrollbar;
+        windowOptions.flagsMask = ImGuiWindowFlags_NoScrollbar;
         windowOptions.name = "##Scene";
         robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
     }
@@ -44,16 +43,16 @@ namespace viewer {
         m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
                                 viewportMaxRegion.y + viewportOffset.y };
 
-        /// TODO(a.raag) switch mode of camera ///
         auto ViewPanelSize = ImGui::GetContentRegionAvail();
-
-        if(m_ViewportSize != robot2D::vec2u { ViewPanelSize.x, ViewPanelSize.y}) {
-            m_ViewportSize = {ViewPanelSize.x, ViewPanelSize.y};
+        robot2D::vec2u viewSize = {static_cast<unsigned>(ViewPanelSize.x),
+                                   static_cast<unsigned>(ViewPanelSize.y)};
+        if(m_ViewportSize != viewSize) {
+            m_ViewportSize = viewSize;
             m_framebuffer -> Resize(m_ViewportSize);
             m_camera2D.resetViewport(m_ViewportSize.as<float>());
 
             auto* msg = m_messageBus.postMessage<SceneViewportMessage>(MessageID::SceneViewportSize);
-            msg -> newSize = {ViewPanelSize.x, ViewPanelSize.y};
+            msg -> newSize = viewSize.as<float>();
         }
 
         robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());

@@ -2,8 +2,6 @@
 #include <robot2D/Util/Logger.hpp>
 #include <viewer/SceneGrid.hpp>
 
-#include <robot2D/Graphics/Transform.hpp>
-
 namespace viewer {
 
     const std::string gridVertexShader = R"(
@@ -66,12 +64,12 @@ namespace viewer {
     }
 
     bool SceneGrid::setup() {
-        if(!m_shader.createShader(robot2D::shaderType::vertex, gridVertexShader, false)){
+        if(!m_shader.createShader(robot2D::ShaderType::Vertex, gridVertexShader, false)){
             RB_ERROR("Can't setup Grid's vertex shader");
             return false;
         }
 
-        if(!m_shader.createShader(robot2D::shaderType::fragment, gridFragmentShader, false)){
+        if(!m_shader.createShader(robot2D::ShaderType::Fragment, gridFragmentShader, false)){
             RB_ERROR("Can't setup Grid's fragment shader");
             return false;
         }
@@ -80,7 +78,7 @@ namespace viewer {
         if(!m_vertexArray)
             return false;
 
-        auto vertexBuffer = robot2D::VertexBuffer::Create(sizeof(Vertex) * 4);
+        auto vertexBuffer = robot2D::VertexBuffer::Create(sizeof(GridVertex) * m_vertices.size());
 
         m_vertices[0].texCoord = {0, 0};
         m_vertices[1].texCoord = {1, 0};
@@ -100,14 +98,15 @@ namespace viewer {
         quadIndices[4] = 3;
         quadIndices[5] = 0;
 
-        auto indexBuffer = robot2D::IndexBuffer::Create(quadIndices, 6 * sizeof(uint32_t));
-        m_vertexArray -> setVertexBuffer(vertexBuffer);
-        m_vertexArray -> setIndexBuffer(indexBuffer);
-
         m_vertices[0].pos = robot2D::vec2f {-1.F, -1.F};
         m_vertices[1].pos = robot2D::vec2f {1.F, -1.F};
         m_vertices[2].pos = robot2D::vec2f {1.F, 1.F};
         m_vertices[3].pos = robot2D::vec2f {-1.F, 1.F};
+
+        vertexBuffer -> setData(m_vertices.data(), sizeof(GridVertex) * m_vertices.size());
+        auto indexBuffer = robot2D::IndexBuffer::Create(quadIndices, 6 * sizeof(uint32_t));
+        m_vertexArray -> setVertexBuffer(vertexBuffer);
+        m_vertexArray -> setIndexBuffer(indexBuffer);
 
         return true;
     }
@@ -115,13 +114,11 @@ namespace viewer {
     void SceneGrid::render() const{
         m_shader.use();
 
-        m_vertexArray -> getVertexBuffer() -> setData(&m_vertices[0], sizeof(Vertex) * 4);
-
         m_vertexArray -> Bind();
-        auto indicesSize = m_vertexArray -> getIndexBuffer() -> getSize() / 4;
-        glDrawElements(GL_TRIANGLES, indicesSize, GL_UNSIGNED_INT, nullptr);
+        static auto indicesSize = m_vertexArray -> getIndexBuffer() -> getSize() / 4;
+        glDrawElements(GL_TRIANGLES, static_cast<int>(indicesSize), GL_UNSIGNED_INT, nullptr);
         m_vertexArray -> unBind();
-
         m_shader.unUse();
     }
+
 } // namespace viewer

@@ -1,9 +1,8 @@
 #include <robot2D/Util/Logger.hpp>
 
 #include <viewer/ViewerScene.hpp>
-#include <viewer/macro.hpp>
-
-
+#include <viewer/Macro.hpp>
+#include <viewer/Defines.hpp>
 
 #include <viewer/panels/MenuPanel.hpp>
 #include <viewer/panels/ViewerPanel.hpp>
@@ -22,8 +21,22 @@ namespace viewer {
         DeleteFrame,
         Undo,
         Redo,
-        Transparent
+        Transparent,
+        CutMode
     };
+
+
+    class InputManager {
+    public:
+        InputManager();
+        ~InputManager();
+
+
+    private:
+        EventBinder& m_eventBinder;
+        std::unordered_map<KeyAction, robot2D::Key> m_inputMap;
+    };
+
 
     static std::unordered_map<KeyAction, robot2D::Key> m_inputMap = {
             {KeyAction::FlipLeft, robot2D::Key::A},
@@ -32,6 +45,7 @@ namespace viewer {
             {KeyAction::Undo, robot2D::Key::Z},
             {KeyAction::Redo, robot2D::Key::R},
             {KeyAction::Transparent, robot2D::Key::T},
+            {KeyAction::CutMode, robot2D::Key::M},
     };
 
     namespace fs = std::filesystem;
@@ -95,30 +109,52 @@ namespace viewer {
         m_window -> setCursor(cursor);
         */
 
-        m_eventBinder.bindEvent(robot2D::Event::Resized, [this](const robot2D::Event& event) {
-            RB_INFO("New Size = {0} and {1}", event.size.widht, event.size.heigth);
-            m_window -> resize({event.size.widht, event.size.heigth});
-            m_camera2D.resetViewport({event.size.widht, event.size.heigth});
-            m_frameBuffer -> Resize({event.size.widht, event.size.heigth});
+        bool bindResult = false;
+        bindResult = m_eventBinder.bindEvent<robot2D::Event::SizeEvent>(robot2D::Event::Resized,
+                                                                        [this](const auto& event) {
+            RB_INFO("New Size = {0} and {1}", event.widht, event.heigth);
+            robot2D::vec2f newSize = {event.widht, event.heigth};
+            m_window -> resize(newSize.as<int>());
+            m_camera2D.resetViewport(newSize);
+            m_frameBuffer -> Resize(newSize.as<unsigned int>());
         });
 
-        m_eventBinder.bindEvent(robot2D::Event::MouseMoved, [this](const robot2D::Event& event) {
-            if(m_leftMousePressed && !m_panelManager.isMouseIsOver()) {
-                robot2D::vec2f movePos{event.move.x, event.move.y};
+        if(!bindResult) {
+            RB_CRITICAL("Can't bind SizeEvent callback");
+            THROW("Can't bind SizeEvent callback");
+        }
 
-                auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
-                movePos -= bounds;
-                movePos = m_camera2D.mapPixelToCoords(movePos, m_frameBuffer);
+        bindResult = m_eventBinder.bindEvent<robot2D::Event::MouseMoveEvent>(robot2D::Event::MouseMoved,
+                                                                BIND_CLASS_FN(onMouseMoved));
 
-                auto pos = m_selectCollider.getPosition();
-                m_selectCollider.setSize({movePos.x - pos.x, movePos.y - pos.y});
-                m_Manager.setCollider(m_selectCollider.getRect());
-            }
-        });
+        if(!bindResult) {
+            RB_CRITICAL("Can't bind MouseMove callback");
+            THROW("Can't bind MouseMove callback");
+        }
 
-        m_eventBinder.bindEvent(robot2D::Event::MousePressed, BIND_CLASS_FN(onMousePressed));
-        m_eventBinder.bindEvent(robot2D::Event::MouseReleased, BIND_CLASS_FN(onMouseReleased));
-        m_eventBinder.bindEvent(robot2D::Event::KeyPressed, BIND_CLASS_FN(onKeyboardPressed));
+        bindResult = m_eventBinder.bindEvent<robot2D::Event::MouseButtonEvent>(robot2D::Event::MousePressed,
+                                                                  BIND_CLASS_FN(onMousePressed));
+
+        if(!bindResult) {
+            RB_CRITICAL("Can't bind MouseButtonEvent(Pressed) callback");
+            THROW("Can't bind MouseButtonEvent(Pressed) callback");
+        }
+
+        bindResult = m_eventBinder.bindEvent<robot2D::Event::MouseButtonEvent>(robot2D::Event::MouseReleased,
+                                                                  BIND_CLASS_FN(onMouseReleased));
+
+        if(!bindResult) {
+            RB_CRITICAL("Can't bind MouseButtonEvent(Released) callback");
+            THROW("Can't bind MouseButtonEvent(Released) callback");
+        }
+
+        bindResult = m_eventBinder.bindEvent<robot2D::Event::KeyboardEvent>(robot2D::Event::KeyPressed,
+                                                                BIND_CLASS_FN(onKeyboardPressed));
+
+        if(!bindResult) {
+            RB_CRITICAL("Can't bind KeyboardEvent callback");
+            THROW("Can't bind KeyboardEvent callback");
+        }
 
         // TODO(a.raag): make as window callback in future
         auto windowHandle = static_cast<GLFWwindow*>(m_window -> getRaw());
@@ -179,19 +215,33 @@ namespace viewer {
         m_View.afterRender();
     }
 
-    void ViewerScene::onMousePressed(const robot2D::Event& event) {
+    void ViewerScene::onMouseMoved(const robot2D::Event::MouseMoveEvent& event) {
+        if(m_leftMousePressed && !m_panelManager.isMouseIsOver()) {
+            robot2D::vec2f movePos{event.x, event.y};
+
+            auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
+            movePos -= bounds;
+            movePos = m_camera2D.mapPixelToCoords(movePos, m_frameBuffer);
+
+            auto pos = m_selectCollider.getPosition();
+            m_selectCollider.setSize({movePos.x - pos.x, movePos.y - pos.y});
+            m_Manager.setCollider(m_selectCollider.getRect());
+        }
+    }
+
+    void ViewerScene::onMousePressed(const robot2D::Event::MouseButtonEvent& event) {
         if(m_panelManager.isMouseIsOver())
             return;
 
-        robot2D::vec2i convertedPoint { event.mouse.x, event.mouse.y };
+        robot2D::vec2i convertedPoint { event.x, event.y };
         auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
         convertedPoint -= bounds.as<int>();
         auto formatted = m_camera2D.mapPixelToCoords(convertedPoint.as<float>(), m_frameBuffer);
         convertedPoint = formatted.as<int>();
 
-        std::pair<bool, int> collisionPair = {false, -1};
+        std::pair<bool, int> collisionPair = { false, NO_INDEX };
 
-        if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
+        if(event.btn != robot2D::Mouse::MouseMiddle) {
             collisionPair = m_Manager.getCollisionPair(convertedPoint.as<float>());
         }
 
@@ -199,12 +249,12 @@ namespace viewer {
             auto& collider = m_Manager.getCollider(collisionPair.second);
             m_selectCollider.setRect(collider.getRect());
 
-            if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
+            if(event.btn == robot2D::Mouse::MouseLeft) {
                 if(collider.state != Collider::State::Selected) {
                     collider.showMovePoints = true;
                 }
             }
-            else if(event.mouse.btn == robot2D::Mouse::MouseRight) {
+            else if(event.btn == robot2D::Mouse::MouseRight) {
                 switch(collider.state) {
                     default:
                         break;
@@ -220,20 +270,20 @@ namespace viewer {
             }
         }
         else {
-            if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
+            if(event.btn != robot2D::Mouse::MouseMiddle) {
                 m_leftMousePressed = true;
-                m_selectCollider.setPosition({convertedPoint.x, convertedPoint.y});
+                m_selectCollider.setPosition(convertedPoint.as<float>());
             }
         }
     }
 
-    void ViewerScene::onMouseReleased(const robot2D::Event& event) {
+    void ViewerScene::onMouseReleased(const robot2D::Event::MouseButtonEvent& event) {
         if(m_panelManager.isMouseIsOver())
             return;
 
-        if(event.mouse.btn != robot2D::Mouse::MouseMiddle) {
+        if(event.btn != robot2D::Mouse::MouseMiddle) {
             auto rect = m_selectCollider.getRect();
-            if(m_View.insideView({rect.lx, rect.ly, rect.width, rect.height}))
+            if(m_View.insideView(rect.as<int>()))
                 m_Manager.processFrames(
                         m_selectCollider.getRect(),
                         m_View.getPosition(),
@@ -241,49 +291,60 @@ namespace viewer {
                 );
         }
 
-        if(event.mouse.btn == robot2D::Mouse::MouseLeft) {
+        if(event.btn == robot2D::Mouse::MouseLeft) {
             m_selectCollider = {};
             m_leftMousePressed = false;
         }
     }
 
-    void ViewerScene::onKeyboardPressed(const robot2D::Event& event) {
+    void ViewerScene::onKeyboardPressed(const robot2D::Event::KeyboardEvent& event) {
         if(m_panelManager.isMouseIsOver())
             return;
 
-        if(event.key.code == m_inputMap[KeyAction::FlipLeft]) {
+        if(event.code == m_inputMap[KeyAction::FlipLeft]) {
             m_View.flipAnimation(false);
             return;
         }
 
-        if(event.key.code == m_inputMap[KeyAction::FlipRight]) {
+        if(event.code == m_inputMap[KeyAction::FlipRight]) {
             m_View.flipAnimation(true);
             return;
         }
 
-        if(event.key.code == m_inputMap[KeyAction::DeleteFrame]) {
+        if(event.code == m_inputMap[KeyAction::DeleteFrame]) {
             m_Manager.deleteFrame();
             return;
         }
 
-        if(event.key.code == m_inputMap[KeyAction::Undo]) {
+        if(event.code == m_inputMap[KeyAction::Undo]) {
             m_Manager.undo();
             return;
         }
 
-        if(event.key.code == m_inputMap[KeyAction::Redo]) {
+        if(event.code == m_inputMap[KeyAction::Redo]) {
             m_Manager.redo();
             return;
         }
 
-        if(event.key.code == m_inputMap[KeyAction::Transparent]) {
+        if(event.code == m_inputMap[KeyAction::Transparent]) {
             auto sz = m_window -> getSize();
             auto mousePos = m_window -> getMousePos();
-            if(m_View.insideView({mousePos.x, mousePos.y, 1, 1}))
+
+            auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
+            mousePos -= bounds;
+            mousePos = m_camera2D.mapPixelToCoords(mousePos, m_frameBuffer);
+
+            if(m_View.insideView( { mousePos.as<int>(), {1, 1} }))
                 m_View.processImage(mousePos, sz.as<float>());
             return;
         }
+
+        if(event.code == m_inputMap[KeyAction::CutMode]) {
+            m_Manager.setCutMode();
+            return;
+        }
     }
+
 
     void ViewerScene::updateAnimation(ViewerAnimation* animation) {
         m_currentAnimation = animation;
@@ -304,8 +365,8 @@ namespace viewer {
     }
 
     std::pair<bool, robot2D::vec2f>
-    ViewerScene::onLoadAnimation(robot2D::Image&& image, const AnimationList& animationList) {
-        return m_View.onLoadAnimation(std::move(image), animationList);
+    ViewerScene::onLoadAnimation(robot2D::Image&& image) {
+        return m_View.onLoadAnimation(std::move(image));
     }
 
 }

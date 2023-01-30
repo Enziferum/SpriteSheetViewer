@@ -14,15 +14,19 @@ namespace viewer {
 
     robot2D::Color hexToColor(unsigned int hexValue) {
         robot2D::Color rgbColor;
-        rgbColor.red = ((hexValue >> 24) & 0xFF);  // Extract the RR byte
-        rgbColor.green = ((hexValue >> 16) & 0xFF);   // Extract the GG byte
-        rgbColor.blue = ((hexValue >> 16) & 0xFF);   // Extract the BB byte
-        rgbColor.alpha = ((hexValue) & 0xFF);        // Extract the alpha byte
+        rgbColor.red = static_cast<float>((hexValue >> 24) & 0xFF);
+        rgbColor.green = static_cast<float>((hexValue >> 16) & 0xFF);
+        rgbColor.blue = static_cast<float>((hexValue >> 16) & 0xFF);
+        rgbColor.alpha = static_cast<float>((hexValue) & 0xFF);
         return rgbColor;
     }
 
 
     IParser::~IParser() {}
+
+    std::unique_ptr<IParser> getParser() {
+        return std::make_unique<XmlParser>();
+    }
 
     XmlParser::XmlParser() {
         m_keys = {
@@ -135,7 +139,4 @@ namespace viewer {
         return true;
     }
 
-    std::unique_ptr<IParser> getParser() {
-        return std::make_unique<XmlParser>();
-    }
 }
