@@ -8,6 +8,8 @@
 #include <viewer/commands/DeleteFrameCommand.hpp>
 
 
+#include <unordered_set>
+
 namespace viewer {
 
     ViewerManager::ViewerManager(robot2D::MessageBus& messageBus,
@@ -158,6 +160,21 @@ namespace viewer {
         }
     }
 
+    struct HashFunction {
+        size_t operator()(const robot2D::IntRect& rect) const
+        {
+            // Compute individual hash values for first, second and third
+            // http://stackoverflow.com/a/1646913/126995
+            size_t res = 17;
+            res = res * 31 + std::hash<int>()( rect.lx );
+            res = res * 31 + std::hash<int>()( rect.ly );
+            res = res * 31 + std::hash<int>()( rect.width );
+            res = res * 31 + std::hash<int>()( rect.height );
+            return res;
+        }
+    };
+
+
     void ViewerManager::processFrames(const robot2D::FloatRect& clipRegion,
                                       const robot2D::vec2f& worldPosition,
                                       robot2D::Image& image) {
@@ -165,25 +182,30 @@ namespace viewer {
         if(m_updateIndex == NO_INDEX) {
             collider.setRect(clipRegion);
             if(collider.notZero()) {
-                if(m_cutMode == CutMode::Automatic) {
-                    auto&& frames = SpriteCutter{}.cutFrames(
+                if (m_cutMode == CutMode::Automatic) {
+                    auto &&frames = SpriteCutter{}.cutFrames(
                             {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
                             image,
                             worldPosition
                     );
 
-                    frames.erase(
-                            std::unique(frames.begin(), frames.end()),
-                            frames.end());
-                    std::sort(frames.begin(), frames.end());
+                    std::unordered_set<robot2D::IntRect, HashFunction> uniqueFrames;
+                    for (const auto &frame: frames)
+                        uniqueFrames.insert(frame);
 
-                    for(const auto& frame: frames) {
-                        collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                    std::vector<robot2D::IntRect> sortFrames;
+                    sortFrames.assign(uniqueFrames.begin(), uniqueFrames.end());
+                    std::sort(sortFrames.begin(), sortFrames.end(), [](const robot2D::IntRect &l,
+                                                                       const robot2D::IntRect &r) {
+                        return l.lx < r.lx;
+                    });
+
+                    for (const auto& frame: sortFrames) {
+                        collider.setRect(frame.as<float>());
                         m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
                         m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                     }
-                }
-                else {
+                } else {
                     m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
                     m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                 }
