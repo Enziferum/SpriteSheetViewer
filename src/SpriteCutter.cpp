@@ -5,6 +5,7 @@
 
 #include <robot2D/Util/Logger.hpp>
 #include <unordered_set>
+#include <deque>
 
 namespace viewer {
     std::vector<std::vector<SpriteCutter::colorPoint>>
@@ -58,35 +59,35 @@ namespace viewer {
         using Point = robot2D::vec2i;
         // Left neighbor
         if (point.x > 0)
-            res.push_back(Point(point.x - 1, point.y));
+            res.emplace_back(Point(point.x - 1, point.y));
 
         // Right neighbor
         if (point.x < imageWidth)
-            res.push_back(Point(point.x + 1, point.y));
+            res.emplace_back(Point(point.x + 1, point.y));
 
         // Top neighbor
         if (point.y > 0)
-            res.push_back(Point(point.x, point.y - 1));
+            res.emplace_back(Point(point.x, point.y - 1));
 
         // Bottom neighbor
         if (point.y < imageHeight)
-            res.push_back(Point(point.x, point.y + 1));
+            res.emplace_back(Point(point.x, point.y + 1));
 
         // Top-left neighbor
         if (point.x > 0 && point.y > 0)
-            res.push_back(Point(point.x - 1, point.y - 1));
+            res.emplace_back(Point(point.x - 1, point.y - 1));
 
         // Top-right neighbor
         if (point.x < imageWidth && point.y > 0)
-            res.push_back(Point(point.x + 1, point.y - 1));
+            res.emplace_back(Point(point.x + 1, point.y - 1));
 
         // Bottom-left neighbor
         if (point.x > 0 && point.y < imageHeight - 1)
-            res.push_back(Point(point.x - 1, point.y + 1));
+            res.emplace_back(Point(point.x - 1, point.y + 1));
 
         // Bottom-right neighbor
         if (point.x < imageWidth && point.y < imageHeight)
-            res.push_back(Point(point.x + 1, point.y + 1));
+            res.emplace_back(Point(point.x + 1, point.y + 1));
         return res;
     }
 
@@ -108,7 +109,8 @@ namespace viewer {
     robot2D::Color SpriteCutter::getColor(robot2D::Image& image, robot2D::vec2i position) {
         unsigned int pixelBufferIndex = (position.y) * 4 * image.getSize().x + (position.x - 1) * 4;
         auto* buffer = image.getBuffer();
-        return {buffer[pixelBufferIndex], buffer[pixelBufferIndex + 1], buffer[pixelBufferIndex + 2], buffer[pixelBufferIndex + 3]};
+        return {buffer[pixelBufferIndex], buffer[pixelBufferIndex + 1], buffer[pixelBufferIndex + 2],
+                buffer[pixelBufferIndex + 3]};
     }
 
     robot2D::IntRect SpriteCutter::findBoundingBox(robot2D::Image& image, robot2D::vec2i point) {
@@ -118,7 +120,7 @@ namespace viewer {
         std::vector<robot2D::vec2i> neighbors = getNeighbors(point, image);
 
         static const auto isTransparent = [](const robot2D::Color& color) -> bool {
-            return color.alpha == 255;
+            return color.alpha > 0;
         };
 
         for(auto& neighbor: neighbors) {
@@ -185,26 +187,60 @@ namespace viewer {
             return l.area() < r.area();
         });
 
-        auto copyReversed = frames;
-        std::reverse(copyReversed.begin(), copyReversed.end());
 
+        int sz = static_cast<int>(frames.size());
         std::vector<robot2D::IntRect> filteredFrames;
-        filteredFrames.reserve(frames.size());
+        filteredFrames.reserve(sz);
 
-        for(auto& frame: frames) {
-            for(auto& copyFrame: copyReversed) {
-                if(frame.area() >= copyFrame.area()) {
-                    filteredFrames.emplace_back(frame);
-                    break;
+        int i = 0;
+        int j;
+        static auto empty = robot2D::IntRect {};
+
+        for(; i < sz; ++i) {
+            for(j = sz - 1; j > 0; --j) {
+                if(frames[i] == empty || frames[j] == empty)
+                    continue;
+                if(frames[i].contains(frames[j])) {
+                    filteredFrames.emplace_back(frames[i]);
+                    frames[j] = {};
                 }
-
-                if(copyFrame.contains(frame))
-                    break;
+                else if(frames[j].contains(frames[i])) {
+                    filteredFrames.emplace_back(frames[j]);
+                    frames[i] = {};
+                }
             }
         }
+
         filteredFrames.shrink_to_fit();
         return filteredFrames;
     }
+
+    robot2D::IntRect unionFrame(const robot2D::IntRect& frame, const robot2D::IntRect& copyFrame) {
+        robot2D::IntRect unionFrame;
+        unionFrame.lx = std::min(frame.lx, copyFrame.lx);
+        unionFrame.ly = std::min(frame.ly, copyFrame.ly);
+        robot2D::vec2i maxPoint = {
+                std::max(frame.lx + frame.width, copyFrame.lx + copyFrame.width),
+                std::max(frame.ly + frame.height, copyFrame.ly + copyFrame.height)
+        };
+        unionFrame.width = maxPoint.x - unionFrame.lx;
+        unionFrame.height = maxPoint.y - unionFrame.ly;
+        return unionFrame;
+    }
+
+    struct HashFunction1 {
+        size_t operator()(const robot2D::IntRect& rect) const
+        {
+            // Compute individual hash values for first, second and third
+            // http://stackoverflow.com/a/1646913/126995
+            size_t res = 17;
+            res = res * 31 + std::hash<int>()( rect.lx );
+            res = res * 31 + std::hash<int>()( rect.ly );
+            res = res * 31 + std::hash<int>()( rect.width );
+            res = res * 31 + std::hash<int>()( rect.height );
+            return res;
+        }
+    };
 
     std::pair<std::vector<robot2D::IntRect>, bool>
     SpriteCutter::mergeOverlappingFrames(std::vector<robot2D::IntRect> frames) {
@@ -212,48 +248,51 @@ namespace viewer {
         if(frames.size() <= 1)
             return {frames, false};
 
-        std::vector<robot2D::IntRect> copyReversed;
-        {
-            PROFILE_SCOPE("Copy Reversed Frames");
-            copyReversed = frames;
-            std::reverse(copyReversed.begin(), copyReversed.end());
-        }
-
+        int sz = static_cast<int>(frames.size());
         std::vector<robot2D::IntRect> mergedFrames;
-        mergedFrames.reserve(frames.size());
+        mergedFrames.reserve(sz);
 
+        static auto empty = robot2D::IntRect {};
         int intersectsCount = 0;
         bool wasMerge = false;
-
-        for(auto& frame: frames) {
-            for(auto& copyFrame: copyReversed) {
-                if(frame == copyFrame)
-                    break;
-                if(frame.intersects(copyFrame)) {
-                    robot2D::IntRect unionFrame;
-                    unionFrame.lx = std::min(frame.lx, copyFrame.lx);
-                    unionFrame.ly = std::min(frame.ly, copyFrame.ly);
-                    robot2D::vec2i maxPoint = {
-                            std::max(frame.lx + frame.width, copyFrame.lx + copyFrame.width),
-                            std::max(frame.ly + frame.height, copyFrame.ly + copyFrame.height)
-                    };
-                    unionFrame.width = maxPoint.x - unionFrame.lx;
-                    unionFrame.height = maxPoint.y - unionFrame.ly;
-
-                    mergedFrames.emplace_back(unionFrame);
-                    wasMerge = true;
-                    ++intersectsCount;
+        {
+            PROFILE_SCOPE("Actual Merging");
+            int i = 0;
+            int j;
+            for (; i < sz; ++i) {
+                for (j = sz - 1; j > 0; --j) {
+                    if (frames[i] == frames[j] || frames[j] == empty)
+                        continue;
+                    if (frames[i].intersects(frames[j])) {
+                        auto frame = unionFrame(frames[i], frames[j]);
+                        frames[i] = frame;
+                        frames[j] = empty;
+                        mergedFrames.emplace_back(frame);
+                        ++intersectsCount;
+                        wasMerge = true;
+                    }
                 }
+                frames.erase(std::remove_if(frames.begin(), frames.end(),
+                                            [](const auto& f) {return f == empty;}), frames.end());
+                sz = frames.size();
+                if(i >= sz)
+                    break;
             }
         }
+        {
+            PROFILE_SCOPE("Sort merged");
+            std::unordered_set<robot2D::IntRect, HashFunction1> uniqueFrames;
+            for (const auto &frame: frames)
+                uniqueFrames.insert(frame);
 
-        if(frames.size() > 0 && intersectsCount == 0) {
-            for(const auto& frame: frames)
-                mergedFrames.emplace_back(frame);
+            mergedFrames.assign(uniqueFrames.begin(), uniqueFrames.end());
+            std::sort(mergedFrames.begin(), mergedFrames.end(), [](const robot2D::IntRect &l,
+                                                                   const robot2D::IntRect &r) {
+                return l.lx < r.lx;
+            });
+
+            mergedFrames.shrink_to_fit();
         }
-
-        mergedFrames.shrink_to_fit();
-
         RB_INFO("Merge Frames Function: intersection unions count = {0}", intersectsCount);
         return {mergedFrames, wasMerge};
     }
@@ -267,7 +306,7 @@ namespace viewer {
         auto&& colorsPoints = packColorMap(clipRegion, image, worldPosition);
 
         auto isTransparent = [](const robot2D::Color& color) -> bool {
-            return color.alpha == 255;
+            return color.alpha > 0;
         };
 
         robot2D::Image tmpImage;
@@ -276,24 +315,29 @@ namespace viewer {
             tmpImage.create(image.getSize(), image.getBuffer(), image.getColorFormat());
         }
 
+        {
+            PROFILE_SCOPE("Pack Bounding Boxes");
+            for(int i = 0; i < colorsPoints.size(); ++i) {
+                const auto& line = colorsPoints[i];
+                for(int j = 0; j < line.size(); ++j) {
+                    if(isTransparent(line[j].first)) {
+                        auto&& frame = findBoundingBox(tmpImage, line[j].second);
+                        if(frame != robot2D::IntRect{}) {
+                            eraseSprite(tmpImage, frame);
 
-        for(int i = 0; i < colorsPoints.size(); ++i) {
-            const auto& line = colorsPoints[i];
-            for(int j = 0; j < line.size(); ++j) {
-                if(isTransparent(line[j].first)) {
-                    auto&& frame = findBoundingBox(image, line[j].second);
-                    if(frame != robot2D::IntRect{}) {
-                        eraseSprite(image, frame);
-
-                        frame.lx += worldPosition.x;
-                        frame.ly += worldPosition.y;
-                        frames.emplace_back(frame);
+                            frame.lx += static_cast<int>(worldPosition.x);
+                            frame.ly += static_cast<int>(worldPosition.y);
+                            frames.emplace_back(frame);
+                        }
                     }
                 }
             }
         }
+
+
         auto sz = frames.size();
         RB_INFO("ALL FRAMES SIZE = {0}", sz);
+
         bool needProcess = true;
         {
             PROFILE_SCOPE("Combine Rects");
