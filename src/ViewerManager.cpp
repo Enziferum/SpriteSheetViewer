@@ -1,12 +1,13 @@
+#include <unordered_set>
 #include <viewer/ViewerManager.hpp>
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
 #include <viewer/ISceneView.hpp>
 #include <viewer/Defines.hpp>
+#include <viewer/Utils.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
 #include <viewer/commands/DeleteFrameCommand.hpp>
-
 
 namespace viewer {
 
@@ -44,7 +45,7 @@ namespace viewer {
         ViewerAnimation viewerAnimation{};
         viewerAnimation.getAnimation().title = message.name;
         m_animations.emplace_back(std::move(viewerAnimation));
-        m_currentAnimation = m_animations.size() - 1;
+        m_currentAnimation = static_cast<int>(m_animations.size()) - 1;
 
         auto animation = m_animations[m_currentAnimation].getAnimation();
         m_view -> updateAnimation(&m_animations[m_currentAnimation]);
@@ -63,7 +64,7 @@ namespace viewer {
     }
 
     void ViewerManager::onDeleteAnimation(const DeleteAnimationMessage& message) {
-        assert(message.deleteIndex < m_animations.size());
+        assert(message.deleteIndex < static_cast<int>(m_animations.size()));
         if(m_animations.size() > 1)
             m_animations.erase(m_animations.begin() + message.deleteIndex);
         m_currentAnimation = message.switchToIndex;
@@ -158,6 +159,8 @@ namespace viewer {
         }
     }
 
+
+
     void ViewerManager::processFrames(const robot2D::FloatRect& clipRegion,
                                       const robot2D::vec2f& worldPosition,
                                       robot2D::Image& image) {
@@ -165,25 +168,30 @@ namespace viewer {
         if(m_updateIndex == NO_INDEX) {
             collider.setRect(clipRegion);
             if(collider.notZero()) {
-                if(m_cutMode == CutMode::Automatic) {
-                    auto&& frames = SpriteCutter{}.cutFrames(
-                            {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
+                if (m_cutMode == CutMode::Automatic) {
+                    auto &&frames = SpriteCutter{}.cutFrames(
+                            clipRegion.as<unsigned int>(),
                             image,
                             worldPosition
                     );
 
-                    frames.erase(
-                            std::unique(frames.begin(), frames.end()),
-                            frames.end());
-                    std::sort(frames.begin(), frames.end());
+                    std::unordered_set<robot2D::IntRect, util::HashFunction> uniqueFrames;
+                    for (const auto &frame: frames)
+                        uniqueFrames.insert(frame);
 
-                    for(const auto& frame: frames) {
-                        collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                    std::vector<robot2D::IntRect> sortFrames;
+                    sortFrames.assign(uniqueFrames.begin(), uniqueFrames.end());
+                    std::sort(sortFrames.begin(), sortFrames.end(), [](const robot2D::IntRect &l,
+                                                                       const robot2D::IntRect &r) {
+                        return l.lx < r.lx;
+                    });
+
+                    for (const auto& frame: sortFrames) {
+                        collider.setRect(frame.as<float>());
                         m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
                         m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                     }
-                }
-                else {
+                } else {
                     m_commandStack.addCommand<AddFrameCommand>(m_animations[m_currentAnimation], collider);
                     m_animations[m_currentAnimation].addFrame(collider, worldPosition);
                 }
@@ -212,7 +220,7 @@ namespace viewer {
     }
 
     Collider& ViewerManager::getCollider(int index) {
-        assert(index < m_animations[m_currentAnimation].size());
+        assert(index < static_cast<int>(m_animations[m_currentAnimation].size()));
         return m_animations[m_currentAnimation][index];
     }
 
