@@ -1,14 +1,13 @@
+#include <unordered_set>
 #include <viewer/ViewerManager.hpp>
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
 #include <viewer/ISceneView.hpp>
 #include <viewer/Defines.hpp>
+#include <viewer/Utils.hpp>
 
 #include <viewer/commands/AddFrameCommand.hpp>
 #include <viewer/commands/DeleteFrameCommand.hpp>
-
-
-#include <unordered_set>
 
 namespace viewer {
 
@@ -46,7 +45,7 @@ namespace viewer {
         ViewerAnimation viewerAnimation{};
         viewerAnimation.getAnimation().title = message.name;
         m_animations.emplace_back(std::move(viewerAnimation));
-        m_currentAnimation = m_animations.size() - 1;
+        m_currentAnimation = static_cast<int>(m_animations.size()) - 1;
 
         auto animation = m_animations[m_currentAnimation].getAnimation();
         m_view -> updateAnimation(&m_animations[m_currentAnimation]);
@@ -65,7 +64,7 @@ namespace viewer {
     }
 
     void ViewerManager::onDeleteAnimation(const DeleteAnimationMessage& message) {
-        assert(message.deleteIndex < m_animations.size());
+        assert(message.deleteIndex < static_cast<int>(m_animations.size()));
         if(m_animations.size() > 1)
             m_animations.erase(m_animations.begin() + message.deleteIndex);
         m_currentAnimation = message.switchToIndex;
@@ -160,19 +159,6 @@ namespace viewer {
         }
     }
 
-    struct HashFunction {
-        size_t operator()(const robot2D::IntRect& rect) const
-        {
-            // Compute individual hash values for first, second and third
-            // http://stackoverflow.com/a/1646913/126995
-            size_t res = 17;
-            res = res * 31 + std::hash<int>()( rect.lx );
-            res = res * 31 + std::hash<int>()( rect.ly );
-            res = res * 31 + std::hash<int>()( rect.width );
-            res = res * 31 + std::hash<int>()( rect.height );
-            return res;
-        }
-    };
 
 
     void ViewerManager::processFrames(const robot2D::FloatRect& clipRegion,
@@ -184,12 +170,12 @@ namespace viewer {
             if(collider.notZero()) {
                 if (m_cutMode == CutMode::Automatic) {
                     auto &&frames = SpriteCutter{}.cutFrames(
-                            {clipRegion.lx, clipRegion.ly, clipRegion.width, clipRegion.height},
+                            clipRegion.as<unsigned int>(),
                             image,
                             worldPosition
                     );
 
-                    std::unordered_set<robot2D::IntRect, HashFunction> uniqueFrames;
+                    std::unordered_set<robot2D::IntRect, util::HashFunction> uniqueFrames;
                     for (const auto &frame: frames)
                         uniqueFrames.insert(frame);
 
@@ -234,7 +220,7 @@ namespace viewer {
     }
 
     Collider& ViewerManager::getCollider(int index) {
-        assert(index < m_animations[m_currentAnimation].size());
+        assert(index < static_cast<int>(m_animations[m_currentAnimation].size()));
         return m_animations[m_currentAnimation][index];
     }
 

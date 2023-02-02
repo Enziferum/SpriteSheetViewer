@@ -1,6 +1,6 @@
 #include <robot2D/Engine.hpp>
-#include <viewer/Viewer.hpp>
 #include <profiler/Profiler.hpp>
+#include <viewer/Viewer.hpp>
 
 int main() {
     robot2D::EngineConfiguration engineConfiguration{};
