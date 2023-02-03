@@ -30,7 +30,7 @@ namespace viewer {
         void render();
 
         void updateView(std::size_t tabIndex, ViewerAnimation* animation) override;
-        void onLoadImage(robot2D::Image &&image) override;
+        void onLoadImage(robot2D::Image&& image, std::size_t newIndex) override;
         std::pair<bool, robot2D::vec2f>
 
         onLoadAnimation(robot2D::Image&& image) override;

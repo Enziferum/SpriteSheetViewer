@@ -12,24 +12,28 @@ namespace viewer {
     }
 
     AnimationPanel::AnimationPanel(robot2D::MessageBus& messageBus,
-                                   MessageDispatcher& messageDispatcher):
+                                   MessageDispatcher& messageDispatcher,
+                                   IAddGetName* namesContainer):
         IPanel(typeid(AnimationPanel)),
         m_messageBus{messageBus},
-        m_messageDispatcher{messageDispatcher} {
-        m_currentName = "Default Animation";
-        m_addName = "Default Animation";
+        m_messageDispatcher{messageDispatcher},
+        m_namesContainer{namesContainer}
+        {
+            m_currentName = "Default Animation";
+            m_addName = "Default Animation";
 
-        setup();
+            setup();
     }
 
     void AnimationPanel::setup() {
-        onAdd();
-
         m_messageDispatcher.onMessage<AnimationPanelLoadEmptyMessage>(
                 MessageID::AnimationPanelLoad, BIND_CLASS_FN(onLoad));
 
         m_messageDispatcher.onMessage<AnimationPanelLoadMessage>(
                 MessageID::AnimationPanelAddAnimation, BIND_CLASS_FN(onLoadAnimation));
+
+        m_messageDispatcher.onMessage<SwitchTabMessage>(
+                MessageID::SwitchTab, BIND_CLASS_FN(onSwitchTab));
     }
 
 
@@ -47,7 +51,6 @@ namespace viewer {
 
         robot2D::createWindow(windowOptions, BIND_CLASS_FN(windowFunction));
     }
-
 
     void AnimationPanel::windowFunction() {
         static auto addButtonColors = {
@@ -71,10 +74,12 @@ namespace viewer {
 
         checkMouseHover();
 
+        auto& animationNames = m_namesContainer -> getNames();
+
         robot2D::InputText("Name", &m_currentName, 0, nullptr, nullptr);
-        if(m_currentAnimation >= 0 && !m_animationNames.empty() &&
-            m_currentName != m_animationNames[m_currentAnimation])
-            m_animationNames[m_currentAnimation] = m_currentName;
+        if(m_currentAnimation >= 0 && !animationNames.empty() &&
+            m_currentName != animationNames[m_currentAnimation])
+            animationNames[m_currentAnimation] = m_currentName;
 
 
         colorButton("Add", addButtonColors, [this]() { m_needShowModal = true; });
@@ -101,19 +106,18 @@ namespace viewer {
         ImGui::SameLine();
         ImGui::Text("%d", m_animation ? m_animation -> getVisibleFrameCounts() : 0);
 
-        std::string previewValue = m_lastCurrentAnimation >= 0
-                    ? m_animationNames[m_lastCurrentAnimation] : "Default";
+        std::string previewValue = m_lastCurrentAnimation >= 0 ? animationNames[m_lastCurrentAnimation] : "Default";
 
         if (ImGui::BeginCombo("Animations", previewValue.c_str(), 0))
         {
-            for (int n = 0; n < static_cast<int>(m_animationNames.size()); ++n)
+            for (int n = 0; n < static_cast<int>(animationNames.size()); ++n)
             {
                 const bool is_selected = (m_currentAnimation == n);
-                if (ImGui::Selectable(m_animationNames[n].c_str(), is_selected)) {
+                if (ImGui::Selectable(animationNames[n].c_str(), is_selected)) {
                     m_currentAnimation = n;
                     auto* msg = m_messageBus.postMessage<SwitchAnimationMessage>(MessageID::SwitchAnimation);
                     msg -> indexTo = m_currentAnimation;
-                    m_currentName = m_animationNames[m_currentAnimation];
+                    m_currentName = animationNames[m_currentAnimation];
                 }
 
                 if (is_selected)
@@ -138,10 +142,10 @@ namespace viewer {
     void AnimationPanel::onAdd() {
         auto* msg = m_messageBus.postMessage<AddAnimationMessage>(MessageID::AddAnimation);
         msg -> name = m_addName;
-        m_animationNames.emplace_back(m_addName);
-        m_currentAnimation = static_cast<int>(m_animationNames.size() - 1);
+        m_namesContainer -> addName(m_addName);
+        m_currentAnimation = static_cast<int>(m_namesContainer -> getNames().size() - 1);
         m_lastCurrentAnimation = m_currentAnimation;
-        m_currentName = m_animationNames[m_currentAnimation];
+        m_currentName = m_namesContainer -> operator[](m_currentAnimation);
     }
 
     void AnimationPanel::onSave() {
@@ -153,7 +157,6 @@ namespace viewer {
     }
 
     void AnimationPanel::onDelete() {
-        m_animationNames.erase(m_animationNames.begin() + m_currentAnimation);
         auto* msg = m_messageBus.postMessage<DeleteAnimationMessage>(MessageID::DeleteAnimation);
         msg -> deleteIndex = m_currentAnimation;
 
@@ -163,24 +166,8 @@ namespace viewer {
             --m_lastCurrentAnimation;
             --switchIndex;
         }
-        m_currentName = m_animationNames[switchIndex];
+        m_currentName = m_namesContainer -> operator[](switchIndex);
         msg -> switchToIndex = switchIndex;
-    }
-
-    void AnimationPanel::onLoad(const AnimationPanelLoadEmptyMessage& message) {
-        m_animationNames.clear();
-        m_currentName = "Default Animation";
-        m_addName = "Default Animation";
-        m_currentAnimation = 0;
-        m_lastCurrentAnimation = -1;
-        if(message.needAddAnimation)
-            onAdd();
-    }
-
-    void AnimationPanel::onLoadAnimation(const AnimationPanelLoadMessage& message) {
-        if(m_animationNames.empty())
-            m_currentName = message.name;
-        m_animationNames.emplace_back(message.name);
     }
 
     void AnimationPanel::showAddAnimationPanel() {
@@ -196,6 +183,7 @@ namespace viewer {
                 setMouseHoverDirectly(false);
                 m_needShowModal = false;
                 ImGui::CloseCurrentPopup();
+                m_addName = "Default Animation";
             }
 
             ImGui::SetItemDefaultFocus();
@@ -204,9 +192,34 @@ namespace viewer {
                 setMouseHoverDirectly(false);
                 m_needShowModal = false;
                 onAdd();
+                m_addName = "Default Animation";
                 ImGui::CloseCurrentPopup();
             }
             ImGui::EndPopup();
+        }
+    }
+
+
+    void AnimationPanel::onLoad(const AnimationPanelLoadEmptyMessage& message) {
+        m_currentName = "Default Animation";
+        m_currentAnimation = 0;
+        m_lastCurrentAnimation = -1;
+        if(message.needAddAnimation) {
+            onAdd();
+        }
+    }
+
+    void AnimationPanel::onLoadAnimation(const AnimationPanelLoadMessage& message) {
+        if(m_namesContainer -> getNames().empty())
+            m_currentName = message.name;
+    }
+
+    void AnimationPanel::onSwitchTab(const SwitchTabMessage& message) {
+        m_currentAnimation = 0;
+        m_lastCurrentAnimation = -1;
+
+        if(m_namesContainer -> getNames().size() >= m_currentAnimation) {
+            m_currentName = m_namesContainer -> operator[](m_currentAnimation);
         }
     }
 

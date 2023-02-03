@@ -6,17 +6,19 @@
 #include <viewer/SpriteSheetAnimation.hpp>
 #include <viewer/Messages.hpp>
 #include <viewer/Defines.hpp>
+#include <viewer/NamesContainer.hpp>
 
 #include "IPanel.hpp"
 
 namespace viewer {
     class AnimationPanel: public IPanel {
     public:
-        AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher);
+        AnimationPanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher,
+                       IAddGetName* namesContainer);
         ~AnimationPanel() override = default;
 
         void resetNames(const std::vector<std::string>& currentNames) {
-            m_animationNames = currentNames;
+           // m_animationNames = currentNames;
             m_currentAnimation = 0;
             m_lastCurrentAnimation = 0;
         }
@@ -40,12 +42,12 @@ namespace viewer {
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
         SpriteSheetAnimation* m_animation{nullptr};
-        std::vector<std::string> m_animationNames{};
         std::string m_currentName;
         std::string m_addName;
-        int m_currentAnimation = 0;
+        int m_currentAnimation = NO_INDEX;
         int m_lastCurrentAnimation = NO_INDEX;
         bool m_needShowModal{false};
+        IAddGetName* m_namesContainer;
     };
 
 } // namespace viewer

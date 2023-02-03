@@ -4,8 +4,10 @@
 #include <robot2D/Core/MessageBus.hpp>
 #include <robot2D/Graphics/FrameBuffer.hpp>
 #include <viewer/Camera2D.hpp>
-#include "IPanel.hpp"
 #include <viewer/MessageDispather.hpp>
+#include <viewer/Messages.hpp>
+
+#include "IPanel.hpp"
 
 namespace viewer {
     class ScenePanel: public IPanel {
@@ -26,7 +28,7 @@ namespace viewer {
 
         bool isMouseOver() const override;
     private:
-        void onNewTab();
+        void onNewTab(const NewTabMessage& message);
 
         void guiRender();
         void windowFunction();

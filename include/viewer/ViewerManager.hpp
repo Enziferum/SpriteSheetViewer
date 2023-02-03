@@ -7,6 +7,7 @@
 #include "CommandStack.hpp"
 #include "ViewerAnimation.hpp"
 #include "Defines.hpp"
+#include "NamesContainer.hpp"
 
 namespace viewer {
 
@@ -18,8 +19,7 @@ namespace viewer {
 
         void eraseAnimation(std::size_t index) {
             assert(index < m_animations.size());
-            if(m_animations.size() > 1)
-                m_animations.erase(m_animations.begin() + index);
+            m_animations.erase(m_animations.begin() + index);
         }
 
         void clearAnimations() {
@@ -31,6 +31,10 @@ namespace viewer {
         }
 
         const std::vector<ViewerAnimation>& getAnimations() const {
+            return m_animations;
+        }
+
+        std::vector<ViewerAnimation>& getAnimations() {
             return m_animations;
         }
 
@@ -47,8 +51,12 @@ namespace viewer {
         const ViewerAnimation& operator[](std::size_t index) const {
             return m_animations[index];
         }
+
+        void setTexturePath(std::string path) { m_texturePath = path; }
+        const std::string& getTexturePath() const { return m_texturePath; }
     private:
         std::vector<ViewerAnimation> m_animations;
+        std::string m_texturePath;
     };
 
     class ISceneView;
@@ -76,9 +84,12 @@ namespace viewer {
         void deleteFrame();
         std::pair<bool, int> getCollisionPair(const robot2D::vec2f& point);
 
-        void setCutMode() { if(m_cutMode == CutMode::Automatic) m_cutMode = CutMode::Manual; else m_cutMode = CutMode::Automatic;}
+        void setCutMode();
         int getCurrentTab() const { return m_currentTab; }
 
+        IAddGetName* getNamesContainer() {
+            return &m_namesContainer;
+        }
     private:
         void onAddAnimation(const AddAnimationMessage& message);
         void onSwitchAnimation(const SwitchAnimationMessage& message);
@@ -103,7 +114,7 @@ namespace viewer {
         int m_updateIndex = NO_INDEX;
         int m_currentAnimation = NO_INDEX;
 
-        std::string m_texturePath;
         CutMode m_cutMode = CutMode::Automatic;
+        NamesContainer m_namesContainer;
     };
 } // namespace viewer

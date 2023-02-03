@@ -33,10 +33,30 @@ namespace viewer {
         robot2D::FrameBuffer::Ptr getFrameBuffer() const { return m_frameBuffer; }
         robot2D::vec2f getPosition() { return m_animatedSprite.getPosition(); }
         robot2D::Color getImageMaskColor()const { return m_maskColor; }
-        robot2D::Image& getImage(std::size_t index) { return m_textures.get(index).getImage(); }
+        robot2D::Image& getImage(std::size_t index) { m_textures[index].getImage(); }
 
 
-        void onLoadImage(robot2D::Image&& image);
+        void updateImageIndex(std::size_t index) {
+            m_currentIndex = index;
+            if(m_textures.has(m_currentIndex)) {
+                auto& textureSize = m_textures[m_currentIndex].getSize();
+                m_animatedSprite.setTexture(m_textures[m_currentIndex], {0, 0,
+                                                                         static_cast<int>(textureSize.x),
+                                                                         static_cast<int>(textureSize.y)});
+                auto&& bounds = m_animatedSprite.getGlobalBounds();
+                auto windowSize = m_frameBuffer -> getSpecification().size;
+
+                robot2D::vec2f spritePosition = {
+                        windowSize.x / 2.F - bounds.width / 2.F,
+                        windowSize.y / 2.F - bounds.height / 2.F
+                };
+
+                m_animatedSprite.setPosition(spritePosition);
+                m_sprite = m_animatedSprite;
+            }
+
+        }
+        void onLoadImage(robot2D::Image&& image, std::size_t index);
         std::pair<bool, robot2D::vec2f> onLoadAnimation(robot2D::Image&& image);
         bool insideView(const robot2D::IntRect& region) const;
         void draw(robot2D::RenderTarget& target, robot2D::RenderStates) const override;

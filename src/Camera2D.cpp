@@ -14,7 +14,7 @@ namespace viewer {
 
     robot2D::vec2f Camera2D::mapPixelToCoords(const robot2D::vec2f& mousePos) const {
         auto pos = mousePos;
-        return m_renderTarget->mapPixelToCoords(pos.as<int>(), m_view);
+        return m_renderTarget -> mapPixelToCoords(pos.as<int>(), m_view);
     }
 
     robot2D::vec2f Camera2D::mapPixelToCoords(const robot2D::vec2f& point,

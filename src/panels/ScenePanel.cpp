@@ -6,17 +6,17 @@
 #include <viewer/Messages.hpp>
 
 namespace viewer {
-    ScenePanel::ScenePanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher,Camera2D& camera2D):
+    ScenePanel::ScenePanel(
+            robot2D::MessageBus& messageBus,
+            MessageDispatcher& messageDispatcher,
+            Camera2D& camera2D
+    ):
         IPanel(typeid(ScenePanel)),
         m_messageBus{messageBus},
         m_messageDispatcher{messageDispatcher},
         m_camera2D{camera2D} {
 
-        m_messageDispatcher.onMessage<NewTabMessage>(MessageID::NewTab,
-                                                         [this](const NewTabMessage& message) {
-           onNewTab();
-        });
-
+        m_messageDispatcher.onMessage<NewTabMessage>(MessageID::NewTab, BIND_CLASS_FN(onNewTab));
         m_messageBus.postMessage<NewTabMessage>(MessageID::NewTab);
     }
 
@@ -79,17 +79,19 @@ namespace viewer {
 
     void ScenePanel::showScene() {
         auto viewportMinRegion = ImGui::GetWindowContentRegionMin();
-        //auto viewportMinRegion = ImGui::GetContentRegionAvail();
         auto viewportMaxRegion = ImGui::GetWindowContentRegionMax();
         auto viewportOffset = ImGui::GetWindowPos();
         m_ViewportBounds[0] = { viewportMinRegion.x + viewportOffset.x,
-                                viewportMinRegion.y + viewportOffset.y };
+                                viewportMinRegion.y + viewportOffset.y};
         m_ViewportBounds[1] = { viewportMaxRegion.x + viewportOffset.x,
                                 viewportMaxRegion.y + viewportOffset.y };
 
         auto ViewPanelSize = ImGui::GetContentRegionAvail();
         robot2D::vec2u viewSize = {static_cast<unsigned>(ViewPanelSize.x),
                                    static_cast<unsigned>(ViewPanelSize.y)};
+
+        m_ViewportBounds[0] = {viewportOffset.x, viewportOffset.y + (viewportMaxRegion.y - ViewPanelSize.y)};
+
         if(m_ViewportSize != viewSize) {
             m_ViewportSize = viewSize;
             m_framebuffer -> Resize(m_ViewportSize);
@@ -102,7 +104,7 @@ namespace viewer {
         robot2D::RenderFrameBuffer(m_framebuffer, m_ViewportSize.as<float>());
     }
 
-    void ScenePanel::onNewTab() {
+    void ScenePanel::onNewTab(const NewTabMessage& message) {
         std::string newTabName = "Tab " + std::to_string(m_tabNames.size() + 1);
         m_tabNames.emplace_back(std::move(newTabName));
         m_tabIndices[m_tabNames.size() - 1] = true;

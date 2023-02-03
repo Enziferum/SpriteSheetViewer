@@ -178,7 +178,8 @@ namespace viewer {
         m_panelManager.addPanel<viewer::MenuPanel>(m_messageBus);
         m_panelManager.addPanel<viewer::ViewerPanel>();
         m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_messageDispatcher, m_camera2D);
-        m_panelManager.addPanel<viewer::AnimationPanel>(m_messageBus, m_messageDispatcher);
+        m_panelManager.addPanel<viewer::AnimationPanel>(m_messageBus, m_messageDispatcher,
+                                                        m_Manager.getNamesContainer());
 
         auto winSize = m_window -> getSize();
         m_camera2D.resetViewport(winSize.as<float>());
@@ -291,7 +292,7 @@ namespace viewer {
 
         if(event.btn != robot2D::Mouse::MouseMiddle) {
             auto rect = m_selectCollider.getRect();
-            if(m_View.insideView(rect.as<int>()))
+            if(rect.area() > 1.F && m_View.insideView(rect.as<int>()))
                 m_Manager.processFrames(
                         m_selectCollider.getRect(),
                         m_View.getPosition(),
@@ -340,7 +341,7 @@ namespace viewer {
 
             auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
             mousePos -= bounds;
-            mousePos = m_camera2D.mapPixelToCoords(mousePos, m_frameBuffer);
+            mousePos = m_camera2D.mapPixelToCoords(mousePos);
 
             if(m_View.insideView( { mousePos.as<int>(), {1, 1} }))
                 m_View.processImage(mousePos, sz.as<float>());
@@ -353,9 +354,10 @@ namespace viewer {
         }
     }
 
-
     void ViewerScene::updateView(std::size_t tabIndex, ViewerAnimation* animation) {
         m_currentAnimation = animation;
+        m_View.updateImageIndex(tabIndex);
+
         auto& viewerPanel = m_panelManager.getPanel<ViewerPanel>();
         auto* sheet = viewerPanel.getSpriteSheetAnimation();
         if(sheet) {
@@ -367,8 +369,8 @@ namespace viewer {
         }
     }
 
-    void ViewerScene::onLoadImage(robot2D::Image&& image) {
-        m_View.onLoadImage(std::move(image));
+    void ViewerScene::onLoadImage(robot2D::Image&& image, std::size_t newIndex) {
+        m_View.onLoadImage(std::move(image), newIndex);
     }
 
     std::pair<bool, robot2D::vec2f>

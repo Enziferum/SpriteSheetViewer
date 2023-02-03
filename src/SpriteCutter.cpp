@@ -2,6 +2,7 @@
 #include <viewer/Utils.hpp>
 
 #include <profiler/Profiler.hpp>
+#include <robot2D/Util/Logger.hpp>
 
 
 namespace viewer {
@@ -25,8 +26,12 @@ namespace viewer {
 
         // Mark this cell as visited
         visited[row][col] = true;
-        points.push_back(M[row][col].pos);
-
+        try {
+            points.emplace_back(M[row][col].pos);
+        }
+        catch(const std::bad_alloc& ex) {
+            RB_CRITICAL("Bad alloc");
+        }
         for (int k = 0; k < 8; ++k) {
             if (isSafe(M, row + rowNbr[k], col + colNbr[k], visited))
                 dfs(M, row + rowNbr[k], col + colNbr[k], visited, points);
@@ -83,6 +88,7 @@ namespace viewer {
                     if (!colorPoints[i][j] && !visited[i][j]) {
                         /// dfs ///
                         std::vector<robot2D::vec2i> points;
+                        points.reserve(1000);
                         dfs(colorPoints, i, j, visited, points);
                         if (!points.empty()) {
                             robot2D::vec2i minPoint = points[0];

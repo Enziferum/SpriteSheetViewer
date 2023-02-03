@@ -1,4 +1,5 @@
 #include <unordered_set>
+
 #include <viewer/ViewerManager.hpp>
 #include <viewer/SpriteCutter.hpp>
 #include <viewer/SpriteSheet.hpp>
@@ -61,10 +62,17 @@ namespace viewer {
     void ViewerManager::onSaveAnimations(const SaveAnimationsMessage& message) {
         SpriteSheet spriteSheet;
         AnimationList animations;
-        for(const auto& animation: m_tabs[m_currentTab].getAnimations())
+
+        int idx = 0;
+
+        for(auto& animation: m_tabs[m_currentTab].getAnimations()) {
+            animation.getAnimation().title = m_namesContainer[idx];
             animations.emplace_back(animation.getAnimation());
+            ++idx;
+        }
+
         auto maskColor = m_view -> getImageMaskColor();
-        if(!spriteSheet.saveToFile(message.filePath, m_texturePath, maskColor, animations)) {
+        if(!spriteSheet.saveToFile(message.filePath, m_tabs[m_currentTab].getTexturePath(), maskColor, animations)) {
             RB_CRITICAL("Can't save animation");
             THROW("Can't save animation");
         }
@@ -72,11 +80,27 @@ namespace viewer {
 
     void ViewerManager::onDeleteAnimation(const DeleteAnimationMessage& message) {
        // assert(message.deleteIndex < static_cast<int>(m_animations.size()));
-        m_tabs[m_currentTab].eraseAnimation(message.deleteIndex);
-        m_currentAnimation = message.switchToIndex;
+        if(m_tabs[m_currentTab].getSize() == 1) {
+            ViewerAnimation viewerAnimation{};
+            viewerAnimation.getAnimation().title = "Default Animation";
+
+            m_tabs[m_currentTab].eraseAnimation(message.deleteIndex);
+            m_tabs[m_currentTab].addAnimation(std::move(viewerAnimation));
+            m_currentAnimation = m_tabs[m_currentTab].getSize() - 1;
+
+            auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
+            m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+            m_namesContainer[m_currentAnimation] = "Default Animation";
+            return;
+        }
+        else {
+            m_tabs[m_currentTab].eraseAnimation(message.deleteIndex);
+            m_currentAnimation = message.switchToIndex;
+        }
 
         auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
         m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        m_namesContainer.removeName(message.deleteIndex);
     }
 
     void ViewerManager::onSwitchAnimation(const SwitchAnimationMessage& message) {
@@ -90,7 +114,8 @@ namespace viewer {
         m_currentAnimation = NO_INDEX;
         m_updateIndex = NO_INDEX;
         m_tabs[m_currentTab].clearAnimations();
-        m_texturePath = message.filePath;
+        m_tabs[m_currentTab].setTexturePath(message.filePath);
+        m_namesContainer.clearNames(m_currentTab);
 
         robot2D::Image image{};
         if(!image.loadFromFile(message.filePath)) {
@@ -98,7 +123,7 @@ namespace viewer {
             THROW("Can't load image by path");
         }
 
-        m_view -> onLoadImage(std::move(image));
+        m_view -> onLoadImage(std::move(image), m_currentTab);
         auto* msg = m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
         msg -> needAddAnimation = true;
         m_view -> updateView(m_currentTab, nullptr);
@@ -108,6 +133,7 @@ namespace viewer {
         m_currentAnimation = 0;
         m_updateIndex = NO_INDEX;
         m_tabs[m_currentTab].clearAnimations();
+        m_namesContainer.clearNames(m_currentTab);
 
         SpriteSheet spriteSheet;
         if(!spriteSheet.loadFromFile(message.filePath)) {
@@ -115,7 +141,7 @@ namespace viewer {
             THROW("Can't load spriteSheet by path");
         }
 
-        m_texturePath = spriteSheet.getTexturePath();
+        m_tabs[m_currentTab].setTexturePath(spriteSheet.getTexturePath());
 
         robot2D::Image image{};
         if(!image.loadFromFile(spriteSheet.getTexturePath())) {
@@ -132,6 +158,7 @@ namespace viewer {
             m_tabs[m_currentTab].addAnimation(ViewerAnimation{animation, result.second});
             auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
             msg -> name = animation.title;
+            m_namesContainer.addName(animation.title);
         }
 
         m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
@@ -175,7 +202,7 @@ namespace viewer {
             collider.setRect(clipRegion);
             if (collider.notZero()) {
                 if (m_cutMode == CutMode::Automatic) {
-                    auto &&frames = SpriteCutter{}.cutFrames(
+                    auto&& frames = SpriteCutter{}.cutFrames(
                             clipRegion.as<unsigned int>(),
                             image,
                             worldPosition
@@ -192,15 +219,14 @@ namespace viewer {
                         return l.lx < r.lx;
                     });
 
-                    for (const auto &frame: sortFrames) {
-                        collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
+                    for (const auto& frame: sortFrames) {
+                        collider.setRect(frame.as<float>());
                         m_commandStack.addCommand<AddFrameCommand>(m_tabs[m_currentTab][m_currentAnimation], collider);
                         m_tabs[m_currentTab][m_currentAnimation].addFrame(collider, worldPosition);
                     }
                 } else {
-//                    collider.setRect({frame.lx, frame.ly, frame.width, frame.height});
-//                    m_commandStack.addCommand<AddFrameCommand>(m_tabs[m_currentTab][m_currentAnimation], collider);
-//                    m_tabs[m_currentTab][m_currentAnimation].addFrame(collider, worldPosition);
+                    m_commandStack.addCommand<AddFrameCommand>(m_tabs[m_currentTab][m_currentAnimation], collider);
+                    m_tabs[m_currentTab][m_currentAnimation].addFrame(collider, worldPosition);
                 }
             } else {
                 m_tabs[m_currentTab][m_currentAnimation][m_updateIndex].showMovePoints = false;
@@ -237,10 +263,11 @@ namespace viewer {
         m_currentAnimation = NO_INDEX;
         m_updateIndex = NO_INDEX;
 
+
         auto* msg = m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
         msg -> needAddAnimation = true;
         m_view -> updateView(m_currentTab, nullptr);
-        m_view -> resetNames({});
+        m_namesContainer.addNames();
     }
 
     void ViewerManager::onSwitchTab(const SwitchTabMessage& message) {
@@ -249,14 +276,18 @@ namespace viewer {
         m_updateIndex = NO_INDEX;
 
         m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
-        std::vector<std::string> actualNames;
-        for(const auto& animation: m_tabs[m_currentTab].getAnimations())
-            actualNames.emplace_back(animation.getAnimation().title);
-        m_view -> resetNames(actualNames);
+        m_namesContainer.updateIndex(m_currentTab);
     }
 
     void ViewerManager::onCloseTab(const CloseTabMessage& message) {
         m_currentAnimation = 0;
+    }
+
+    void ViewerManager::setCutMode() {
+        if(m_cutMode == CutMode::Automatic)
+            m_cutMode = CutMode::Manual;
+        else
+            m_cutMode = CutMode::Automatic;
     }
 
 

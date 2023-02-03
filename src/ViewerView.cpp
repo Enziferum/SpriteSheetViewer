@@ -45,20 +45,32 @@ namespace viewer {
 
     void ViewerView::processImage(const robot2D::vec2f& mousePos, const robot2D::vec2f& windowSize) {
         auto&& maskColor = util::readPixel({mousePos.x, windowSize.y - mousePos.y});
+        if(maskColor.alpha == 0)
+            return;
         m_maskColor = maskColor;
         robot2D::Image image{};
-        //image.create(m_texture.getSize(), m_texture.getPixels(), robot2D::ImageColorFormat::RGBA);
+        image.create(m_textures[m_currentIndex].getSize(), m_textures.get(m_currentIndex).getPixels(),
+                     robot2D::ImageColorFormat::RGBA);
         util::applyImageMask(image, maskColor);
-        //m_texture.create(image);
+        m_textures[m_currentIndex].create(image);
     }
 
-    void ViewerView::onLoadImage(robot2D::Image&& image) {
-//        m_texture.create(image);
-//
-//        auto& textureSize = m_texture.getSize();
-//        m_animatedSprite.setTexture(m_texture, {0, 0,
-//                                                static_cast<int>(textureSize.x),
-//                                                static_cast<int>(textureSize.y)});
+    void ViewerView::onLoadImage(robot2D::Image&& image, std::size_t index) {
+        if(index != m_currentIndex)
+            m_currentIndex = index;
+
+        if(!m_textures.has(m_currentIndex)) {
+            auto* texture = m_textures.add(m_currentIndex);
+            texture -> create(std::move(image));
+        }
+        else {
+            m_textures[m_currentIndex].create(image);
+        }
+
+        auto& textureSize = m_textures[m_currentIndex].getSize();
+        m_animatedSprite.setTexture(m_textures[m_currentIndex], {0, 0,
+                                                static_cast<int>(textureSize.x),
+                                                static_cast<int>(textureSize.y)});
 
         auto&& bounds = m_animatedSprite.getGlobalBounds();
         auto windowSize = m_frameBuffer -> getSpecification().size;
@@ -70,11 +82,6 @@ namespace viewer {
 
         m_animatedSprite.setPosition(spritePosition);
         m_sprite = m_animatedSprite;
-
-        image.create(m_textures.get(m_currentIndex).getSize(), m_textures.get(m_currentIndex).getPixels(),
-                     robot2D::ImageColorFormat::RGBA);
-        //applyImageMask(image, maskColor);
-        m_textures.get(m_currentIndex).create(image);
     }
 
     bool ViewerView::insideView(const robot2D::IntRect& region) const {
@@ -85,9 +92,8 @@ namespace viewer {
     std::pair<bool, robot2D::vec2f> ViewerView::onLoadAnimation(robot2D::Image&& image) {
         sheetAnimation.reset();
 
-        robot2D::Texture texture;
-        texture.create(image);
-        //m_textures.append(m_currentIndex, std::move(texture));
+        auto* texture = m_textures.add(m_currentIndex);
+        texture -> create(std::move(image));
 
         auto& textureSize = m_textures.get(m_currentIndex).getSize();
         m_animatedSprite.setTexture(m_textures.get(m_currentIndex), {0, 0,

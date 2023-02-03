@@ -42,6 +42,8 @@ namespace viewer {
             return res;
         }
 
+        void setTitle(const std::string& name) { title = name; }
+
         std::string title;
         int delay;
         std::vector<robot2D::IntRect> frames;
