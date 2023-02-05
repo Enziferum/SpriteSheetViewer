@@ -8,56 +8,9 @@
 #include "ViewerAnimation.hpp"
 #include "Defines.hpp"
 #include "NamesContainer.hpp"
+#include "TabContainer.hpp"
 
 namespace viewer {
-
-    class Tab {
-    public:
-        ViewerAnimation& addAnimation(ViewerAnimation&& viewerAnimation) {
-            return m_animations.emplace_back(viewerAnimation);
-        }
-
-        void eraseAnimation(std::size_t index) {
-            assert(index < m_animations.size());
-            m_animations.erase(m_animations.begin() + index);
-        }
-
-        void clearAnimations() {
-            m_animations.clear();
-        }
-
-        std::size_t getSize() const noexcept {
-            return m_animations.size();
-        }
-
-        const std::vector<ViewerAnimation>& getAnimations() const {
-            return m_animations;
-        }
-
-        std::vector<ViewerAnimation>& getAnimations() {
-            return m_animations;
-        }
-
-        ViewerAnimation& addAnimation(const Animation& animation, const robot2D::vec2f& worldPos = {}) {
-            ViewerAnimation viewerAnimation{animation, worldPos};
-            m_animations.emplace_back(viewerAnimation);
-            return m_animations.back();
-        }
-
-        ViewerAnimation& operator[](std::size_t index) {
-            return m_animations[index];
-        }
-
-        const ViewerAnimation& operator[](std::size_t index) const {
-            return m_animations[index];
-        }
-
-        void setTexturePath(std::string path) { m_texturePath = path; }
-        const std::string& getTexturePath() const { return m_texturePath; }
-    private:
-        std::vector<ViewerAnimation> m_animations;
-        std::string m_texturePath;
-    };
 
     class ISceneView;
     class ViewerManager {
@@ -79,6 +32,8 @@ namespace viewer {
         void setCollider(const robot2D::FloatRect& collidingRect);
         Collider& getCollider(int index);
 
+        void update();
+
         void undo();
         void redo();
         void deleteFrame();
@@ -86,6 +41,10 @@ namespace viewer {
 
         void setCutMode();
         int getCurrentTab() const { return m_currentTab; }
+
+        std::vector<IDocument::Ptr>& getDocuments() {
+            return m_docs;
+        }
 
         IAddGetName* getNamesContainer() {
             return &m_namesContainer;
@@ -102,13 +61,15 @@ namespace viewer {
 
         void onLoadImage(const LoadImageMessage& message);
         void onLoadXml(const LoadXmlMessage& message);
+        void addNewTab();
     private:
         robot2D::MessageBus& m_messageBus;
         MessageDispatcher& m_messageDispatcher;
         ISceneView* m_view{nullptr};
 
-        CommandStack m_commandStack;
-        std::vector<Tab> m_tabs;
+        std::vector<CommandStack> m_commandStack;
+        std::vector<TabContainer::Ptr> m_tabs;
+        std::vector<IDocument::Ptr> m_docs;
 
         int m_currentTab = NO_INDEX;
         int m_updateIndex = NO_INDEX;

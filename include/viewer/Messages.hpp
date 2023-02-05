@@ -67,5 +67,7 @@ namespace viewer {
 
     struct CloseTabMessage {
         int index;
+        bool save;
+        std::string savePath;
     };
 }

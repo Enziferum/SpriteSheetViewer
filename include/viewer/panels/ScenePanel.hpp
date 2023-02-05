@@ -3,16 +3,24 @@
 #include <utility>
 #include <robot2D/Core/MessageBus.hpp>
 #include <robot2D/Graphics/FrameBuffer.hpp>
+
 #include <viewer/Camera2D.hpp>
 #include <viewer/MessageDispather.hpp>
 #include <viewer/Messages.hpp>
+#include <viewer/IDocument.hpp>
+
+#include <viewer/tabbar/SceneTabbarController.hpp>
+#include <viewer/tabbar/SceneTabbarInteractor.hpp>
 
 #include "IPanel.hpp"
 
 namespace viewer {
     class ScenePanel: public IPanel {
     public:
-        ScenePanel(robot2D::MessageBus& messageBus, MessageDispatcher& messageDispatcher, Camera2D& camera2D);
+        ScenePanel(robot2D::MessageBus& messageBus,
+                   MessageDispatcher& messageDispatcher,
+                   Camera2D& camera2D,
+                   std::vector<IDocument::Ptr>& documents);
         ~ScenePanel() override = default;
 
         void update(float dt) override;
@@ -41,8 +49,7 @@ namespace viewer {
         robot2D::vec2u m_ViewportSize{};
         robot2D::vec2f m_ViewportBounds[2];
 
-        std::vector<std::string> m_tabNames;
-        std::unordered_map<int, bool> m_tabIndices;
-        int m_lastOpenIndex = -1;
+        SceneTabbarController m_tabbarController;
+        ISceneTabbarInteractor::Ptr m_tabbarInteractor{nullptr};
     };
 }

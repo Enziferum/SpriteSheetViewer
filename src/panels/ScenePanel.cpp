@@ -1,23 +1,37 @@
 #include <robot2D/imgui/Api.hpp>
+#include <robot2D/imgui/Widgets.hpp>
 #include <imgui/imgui_internal.h>
 
 #include <viewer/panels/ScenePanel.hpp>
 #include <viewer/Macro.hpp>
 #include <viewer/Messages.hpp>
+#include <viewer/FileDialog.hpp>
 
 namespace viewer {
     ScenePanel::ScenePanel(
             robot2D::MessageBus& messageBus,
             MessageDispatcher& messageDispatcher,
-            Camera2D& camera2D
+            Camera2D& camera2D,
+            std::vector<IDocument::Ptr>& documents
     ):
         IPanel(typeid(ScenePanel)),
         m_messageBus{messageBus},
         m_messageDispatcher{messageDispatcher},
-        m_camera2D{camera2D} {
+        m_camera2D{camera2D},
+        m_tabbarController{"##tabs"}
+    {
 
-        m_messageDispatcher.onMessage<NewTabMessage>(MessageID::NewTab, BIND_CLASS_FN(onNewTab));
-        m_messageBus.postMessage<NewTabMessage>(MessageID::NewTab);
+            m_messageDispatcher.onMessage<NewTabMessage>(MessageID::NewTab, BIND_CLASS_FN(onNewTab));
+
+            m_tabbarInteractor = std::make_unique<SceneTabbarInteractor>(m_messageBus, documents, &m_tabbarController);
+            m_tabbarController.setupController();
+            m_tabbarController.setInteractor(std::move(m_tabbarInteractor));
+            m_tabbarController.setVisibleRenderCallback([this]() { showScene(); });
+            m_tabbarController.setDelegate(&m_tabbarController);
+
+            robot2D::TabBarItem tabBarItem{};
+            tabBarItem.name = "Tab 1";
+            m_tabbarController.addTab(tabBarItem);
     }
 
     void ScenePanel::update(float dt) {
@@ -42,39 +56,13 @@ namespace viewer {
     }
 
     void ScenePanel::windowFunction() {
-        static bool opt_reorderable = false;
-        static ImGuiTabBarFlags opt_fitting_flags = ImGuiTabBarFlags_FittingPolicyDefault_;
-
         auto* currentDockNode = ImGui::GetWindowDockNode();
         currentDockNode -> LocalFlags = ImGuiDockNodeFlags_None | ImGuiDockNodeFlags_NoTabBar
                 | ImGuiDockNodeFlags_NoDockingSplitMe | ImGuiDockNodeFlags_NoDockingSplitOther
                 | ImGuiDockNodeFlags_NoDockingOverMe | ImGuiDockNodeFlags_NoDockingOverOther;
         currentDockNode -> UpdateMergedFlags();
 
-        ImGuiTabBarFlags tab_bar_flags = (opt_fitting_flags) | (opt_reorderable ? ImGuiTabBarFlags_Reorderable : 0);
-        bool open = true;
-
-        if (ImGui::BeginTabBar("##tabs", tab_bar_flags))
-        {
-            for (int i = 0; i < m_tabNames.size(); ++i)
-            {
-                ImGuiTabItemFlags tab_flags = (false ? ImGuiTabItemFlags_UnsavedDocument : 0);
-                bool visible = ImGui::BeginTabItem(m_tabNames[i].c_str(), &open, tab_flags);
-                m_tabIndices[i] = visible;
-
-                if (visible)
-                {
-                    if(m_lastOpenIndex != i) {
-                        auto* msg = m_messageBus.postMessage<SwitchTabMessage>(MessageID::SwitchTab);
-                        msg -> switchToIndex = i;
-                        m_lastOpenIndex = i;
-                    }
-                    showScene();
-                    ImGui::EndTabItem();
-                }
-            }
-            ImGui::EndTabBar();
-        }
+        m_tabbarController.render();
     }
 
     void ScenePanel::showScene() {
@@ -105,10 +93,12 @@ namespace viewer {
     }
 
     void ScenePanel::onNewTab(const NewTabMessage& message) {
-        std::string newTabName = "Tab " + std::to_string(m_tabNames.size() + 1);
-        m_tabNames.emplace_back(std::move(newTabName));
-        m_tabIndices[m_tabNames.size() - 1] = true;
-        m_lastOpenIndex = m_tabNames.size() - 1;
+        static int cnt = 1;
+        std::string newTabName = "Tab " + std::to_string(++cnt);
+
+        robot2D::TabBarItem tabBarItem{};
+        tabBarItem.name = newTabName;
+        m_tabbarController.addTab(tabBarItem);
     }
 
 } // namespace viewer

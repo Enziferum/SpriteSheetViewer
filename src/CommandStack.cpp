@@ -24,12 +24,27 @@ namespace viewer {
     }
 
     bool CommandStack::empty() const noexcept {
-        return m_stack.empty();
+        return m_stack.empty() && m_redoQueue.empty();
     }
 
     void CommandStack::addCommand(ICommand::Ptr&& ptr) {
         assert(ptr != nullptr && "Don't add nullptr command");
         m_stack.push(std::move(ptr));
+    }
+
+    std::size_t CommandStack::undoSize() const {
+        return m_stack.size();
+    }
+
+    std::size_t CommandStack::redoSize() const {
+        return m_redoQueue.size();
+    }
+
+    void CommandStack::clear() {
+        while(!m_stack.empty())
+            m_stack.pop();
+        while(!m_redoQueue.empty())
+            m_redoQueue.pop();
     }
 
 } // namespace viewer

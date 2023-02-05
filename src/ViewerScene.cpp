@@ -15,9 +15,11 @@
 namespace viewer {
     robot2D::Color selectColor = robot2D::Color::Green;
 
-    struct KeyInput {
-        //robot2D::Key getKey(const Action& action) const;
-    private:
+    enum class MouseAction {
+        Create,
+        Update,
+        Select,
+        CameraPan
     };
 
     enum class KeyAction {
@@ -31,17 +33,12 @@ namespace viewer {
     };
 
 
-    class InputManager {
-    public:
-        InputManager();
-        ~InputManager();
-
-
-    private:
-        EventBinder& m_eventBinder;
-        std::unordered_map<KeyAction, robot2D::Key> m_inputMap;
+    static std::unordered_map<MouseAction, robot2D::Mouse> m_mouseMap = {
+            {MouseAction::Create, robot2D::Mouse::MouseLeft},
+            {MouseAction::Update, robot2D::Mouse::MouseLeft},
+            {MouseAction::Select, robot2D::Mouse::MouseRight},
+            {MouseAction::CameraPan, robot2D::Mouse::MouseMiddle},
     };
-
 
     static std::unordered_map<KeyAction, robot2D::Key> m_inputMap = {
             {KeyAction::FlipLeft, robot2D::Key::A},
@@ -52,6 +49,48 @@ namespace viewer {
             {KeyAction::Transparent, robot2D::Key::T},
             {KeyAction::CutMode, robot2D::Key::M},
     };
+
+
+
+    enum class EventAction {
+        MousePressed,
+        MouseReleased,
+        MouseMoved,
+        KeyPressed,
+        KeyReleased
+    };
+
+
+
+
+    class InputManager {
+    public:
+        InputManager();
+        ~InputManager();
+
+        bool buildActionsMap();
+        void processEvents(const robot2D::Event& event) {
+            switch(event.type) {
+
+            }
+        }
+
+        bool bindAction(EventAction action, int eventMapKey) {
+            switch(action) {
+                default:
+                    break;
+                case EventAction::MousePressed:
+
+                    break;
+            }
+        }
+    private:
+        EventBinder& m_eventBinder;
+        std::unordered_map<MouseAction, robot2D::Mouse> m_mouseMap;
+        std::unordered_map<KeyAction, robot2D::Key> m_keyMap;
+    };
+
+
 
     namespace fs = std::filesystem;
 
@@ -177,7 +216,9 @@ namespace viewer {
 
         m_panelManager.addPanel<viewer::MenuPanel>(m_messageBus);
         m_panelManager.addPanel<viewer::ViewerPanel>();
-        m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_messageDispatcher, m_camera2D);
+        m_panelManager.addPanel<viewer::ScenePanel>(m_messageBus, m_messageDispatcher,
+                                                    m_camera2D,
+                                                    m_Manager.getDocuments());
         m_panelManager.addPanel<viewer::AnimationPanel>(m_messageBus, m_messageDispatcher,
                                                         m_Manager.getNamesContainer());
 
@@ -206,6 +247,7 @@ namespace viewer {
     }
 
     void ViewerScene::update(float dt) {
+        m_Manager.update();
         m_View.update(dt);
         m_panelManager.update(dt);
         if(!m_panelManager.isMouseIsOver())
@@ -239,8 +281,10 @@ namespace viewer {
     }
 
     void ViewerScene::onMousePressed(const robot2D::Event::MouseButtonEvent& event) {
-        if(m_panelManager.isMouseIsOver())
+        if(m_panelManager.isMouseIsOver() || event.btn == static_cast<int>(m_mouseMap[MouseAction::CameraPan]))
             return;
+
+        // TODO(a.raag): create bb can by left mouse, get information from InputManager
 
         robot2D::vec2i convertedPoint { event.x, event.y };
         auto bounds = m_panelManager.getPanel<ScenePanel>().getPanelBounds();
@@ -249,21 +293,18 @@ namespace viewer {
         convertedPoint = formatted.as<int>();
 
         std::pair<bool, int> collisionPair = { false, NO_INDEX };
-
-        if(event.btn != robot2D::Mouse::MouseMiddle) {
-            collisionPair = m_Manager.getCollisionPair(convertedPoint.as<float>());
-        }
+        collisionPair = m_Manager.getCollisionPair(convertedPoint.as<float>());
 
         if(collisionPair.first && collisionPair.second != -1) {
             auto& collider = m_Manager.getCollider(collisionPair.second);
-            m_selectCollider.setRect(collider.getRect());
 
-            if(event.btn == robot2D::Mouse::MouseLeft) {
+            if(event.btn == m_mouseMap[MouseAction::Update]) {
+                m_selectCollider.setRect(collider.getRect());
                 if(collider.state != Collider::State::Selected) {
                     collider.showMovePoints = true;
                 }
             }
-            else if(event.btn == robot2D::Mouse::MouseRight) {
+            else if(event.btn == m_mouseMap[MouseAction::Select]) {
                 switch(collider.state) {
                     default:
                         break;
@@ -279,28 +320,28 @@ namespace viewer {
             }
         }
         else {
-            if(event.btn != robot2D::Mouse::MouseMiddle) {
+            if(event.btn == m_mouseMap[MouseAction::Create]) {
                 m_leftMousePressed = true;
                 m_selectCollider.setPosition(convertedPoint.as<float>());
             }
         }
+
     }
 
     void ViewerScene::onMouseReleased(const robot2D::Event::MouseButtonEvent& event) {
-        if(m_panelManager.isMouseIsOver())
+        if(m_panelManager.isMouseIsOver() || event.btn == static_cast<int>(m_mouseMap[MouseAction::CameraPan]))
             return;
 
-        if(event.btn != robot2D::Mouse::MouseMiddle) {
-            auto rect = m_selectCollider.getRect();
-            if(rect.area() > 1.F && m_View.insideView(rect.as<int>()))
-                m_Manager.processFrames(
-                        m_selectCollider.getRect(),
-                        m_View.getPosition(),
-                        m_View.getImage(m_Manager.getCurrentTab())
-                );
-        }
+        auto rect = m_selectCollider.getRect();
+        if(rect.area() > 1.F && m_View.insideView(rect.as<int>()))
+            m_Manager.processFrames(
+                m_selectCollider.getRect(),
+                m_View.getPosition(),
+                m_View.getImage(m_Manager.getCurrentTab()
+            )
+        );
 
-        if(event.btn == robot2D::Mouse::MouseLeft) {
+        if(event.btn == m_mouseMap[MouseAction::Create]) {
             m_selectCollider = {};
             m_leftMousePressed = false;
         }

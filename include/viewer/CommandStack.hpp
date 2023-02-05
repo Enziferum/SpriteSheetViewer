@@ -11,10 +11,6 @@ namespace viewer {
     class CommandStack {
     public:
         CommandStack() = default;
-        CommandStack(const CommandStack&) = delete;
-        CommandStack& operator=(const CommandStack&) = delete;
-        CommandStack(CommandStack&& ) = delete;
-        CommandStack& operator=(CommandStack&&) = delete;
         ~CommandStack() = default;
 
         template<typename T, typename ...Args>
@@ -26,6 +22,11 @@ namespace viewer {
 
         void undo();
         void redo();
+
+        std::size_t undoSize() const;
+        std::size_t redoSize() const;
+
+        void clear();
 
         [[nodiscard]]
         bool empty() const noexcept;

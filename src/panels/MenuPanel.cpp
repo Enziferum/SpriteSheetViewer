@@ -14,7 +14,6 @@ namespace viewer {
 
     void MenuPanel::update(float dt) {
         (void)dt;
-//        ImGui::ShowDemoWindow();
         if(ImGui::BeginMainMenuBar()) {
             if(ImGui::BeginMenu("File")) {
                 showFileMenu();

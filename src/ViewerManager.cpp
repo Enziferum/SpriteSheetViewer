@@ -21,6 +21,14 @@ namespace viewer {
 
     void ViewerManager::setup(ISceneView* view) {
         m_view = view;
+        addNewTab();
+        ViewerAnimation viewerAnimation{};
+        viewerAnimation.getAnimation().title = "Default Animation";
+
+        m_tabs[m_currentTab] -> addAnimation(std::move(viewerAnimation));
+        m_currentAnimation = m_tabs[m_currentTab] -> getSize() - 1;
+        m_namesContainer.addNames();
+        m_namesContainer.addName("Default Animation");
 
         m_messageDispatcher.onMessage<AddAnimationMessage>(MessageID::AddAnimation,
                                                            BIND_CLASS_FN(onAddAnimation));
@@ -52,11 +60,11 @@ namespace viewer {
         ViewerAnimation viewerAnimation{};
         viewerAnimation.getAnimation().title = message.name;
 
-        m_tabs[m_currentTab].addAnimation(std::move(viewerAnimation));
-        m_currentAnimation = m_tabs[m_currentTab].getSize() - 1;
+        m_tabs[m_currentTab] -> addAnimation(std::move(viewerAnimation));
+        m_currentAnimation = m_tabs[m_currentTab] -> getSize() - 1;
 
-        auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
-        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        auto animation = m_tabs[m_currentTab] -> operator[](m_currentAnimation).getAnimation();
+        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab]-> operator[](m_currentAnimation));
     }
 
     void ViewerManager::onSaveAnimations(const SaveAnimationsMessage& message) {
@@ -65,14 +73,14 @@ namespace viewer {
 
         int idx = 0;
 
-        for(auto& animation: m_tabs[m_currentTab].getAnimations()) {
+        for(auto& animation: m_tabs[m_currentTab] -> getAnimations()) {
             animation.getAnimation().title = m_namesContainer[idx];
             animations.emplace_back(animation.getAnimation());
             ++idx;
         }
 
         auto maskColor = m_view -> getImageMaskColor();
-        if(!spriteSheet.saveToFile(message.filePath, m_tabs[m_currentTab].getTexturePath(), maskColor, animations)) {
+        if(!spriteSheet.saveToFile(message.filePath, m_tabs[m_currentTab] -> getTexturePath(), maskColor, animations)) {
             RB_CRITICAL("Can't save animation");
             THROW("Can't save animation");
         }
@@ -80,41 +88,41 @@ namespace viewer {
 
     void ViewerManager::onDeleteAnimation(const DeleteAnimationMessage& message) {
        // assert(message.deleteIndex < static_cast<int>(m_animations.size()));
-        if(m_tabs[m_currentTab].getSize() == 1) {
+        if(m_tabs[m_currentTab] -> getSize() == 1) {
             ViewerAnimation viewerAnimation{};
             viewerAnimation.getAnimation().title = "Default Animation";
 
-            m_tabs[m_currentTab].eraseAnimation(message.deleteIndex);
-            m_tabs[m_currentTab].addAnimation(std::move(viewerAnimation));
-            m_currentAnimation = m_tabs[m_currentTab].getSize() - 1;
+            m_tabs[m_currentTab] -> eraseAnimation(message.deleteIndex);
+            m_tabs[m_currentTab] -> addAnimation(std::move(viewerAnimation));
+            m_currentAnimation = m_tabs[m_currentTab] -> getSize() - 1;
 
-            auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
-            m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+            auto animation = m_tabs[m_currentTab]-> operator[](m_currentAnimation).getAnimation();
+            m_view -> updateView(m_currentTab, &m_tabs[m_currentTab]-> operator[](m_currentAnimation));
             m_namesContainer[m_currentAnimation] = "Default Animation";
             return;
         }
         else {
-            m_tabs[m_currentTab].eraseAnimation(message.deleteIndex);
+            m_tabs[m_currentTab] -> eraseAnimation(message.deleteIndex);
             m_currentAnimation = message.switchToIndex;
         }
 
-        auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
-        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        auto animation = m_tabs[m_currentTab]-> operator[](m_currentAnimation).getAnimation();
+        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab]-> operator[](m_currentAnimation));
         m_namesContainer.removeName(message.deleteIndex);
     }
 
     void ViewerManager::onSwitchAnimation(const SwitchAnimationMessage& message) {
         m_currentAnimation = message.indexTo;
 
-        auto animation = m_tabs[m_currentTab][m_currentAnimation].getAnimation();
-        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        auto animation = m_tabs[m_currentTab]-> operator[](m_currentAnimation).getAnimation();
+        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab]-> operator[](m_currentAnimation));
     }
 
     void ViewerManager::onLoadImage(const LoadImageMessage& message) {
         m_currentAnimation = NO_INDEX;
         m_updateIndex = NO_INDEX;
-        m_tabs[m_currentTab].clearAnimations();
-        m_tabs[m_currentTab].setTexturePath(message.filePath);
+        m_tabs[m_currentTab] -> clearAnimations();
+        m_tabs[m_currentTab] -> setTexturePath(message.filePath);
         m_namesContainer.clearNames(m_currentTab);
 
         robot2D::Image image{};
@@ -132,7 +140,7 @@ namespace viewer {
     void ViewerManager::onLoadXml(const LoadXmlMessage& message) {
         m_currentAnimation = 0;
         m_updateIndex = NO_INDEX;
-        m_tabs[m_currentTab].clearAnimations();
+        m_tabs[m_currentTab] -> clearAnimations();
         m_namesContainer.clearNames(m_currentTab);
 
         SpriteSheet spriteSheet;
@@ -141,7 +149,7 @@ namespace viewer {
             THROW("Can't load spriteSheet by path");
         }
 
-        m_tabs[m_currentTab].setTexturePath(spriteSheet.getTexturePath());
+        m_tabs[m_currentTab] -> setTexturePath(spriteSheet.getTexturePath());
 
         robot2D::Image image{};
         if(!image.loadFromFile(spriteSheet.getTexturePath())) {
@@ -155,34 +163,34 @@ namespace viewer {
 
         m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
         for(const auto& animation: spriteSheet.getAnimations()) {
-            m_tabs[m_currentTab].addAnimation(ViewerAnimation{animation, result.second});
+            m_tabs[m_currentTab] -> addAnimation(ViewerAnimation{animation, result.second});
             auto* msg = m_messageBus.postMessage<AnimationPanelLoadMessage>(MessageID::AnimationPanelAddAnimation);
             msg -> name = animation.title;
             m_namesContainer.addName(animation.title);
         }
 
-        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab]-> operator[](m_currentAnimation));
     }
 
     void ViewerManager::undo() {
-        m_commandStack.undo();
+        m_commandStack[m_currentTab].undo();
     }
 
     void ViewerManager::redo() {
-        m_commandStack.redo();
+        m_commandStack[m_currentTab].redo();
     }
 
     void ViewerManager::deleteFrame() {
         if(m_currentAnimation != NO_INDEX && m_updateIndex != NO_INDEX) {
-            auto collider = m_tabs[m_currentTab][m_currentAnimation][m_updateIndex];
+            auto collider = m_tabs[m_currentTab] -> operator[](m_currentAnimation)[m_updateIndex];
             if(collider.state != Collider::State::Selected)
                 return;
 
-            m_tabs[m_currentTab][m_currentAnimation].eraseFrame(m_updateIndex);
+            m_tabs[m_currentTab]-> operator[](m_currentAnimation).eraseFrame(m_updateIndex);
 
             collider.borderColor = robot2D::Color::Green;
-            m_commandStack.addCommand<DeleteFrameCommand>(
-                    m_tabs[m_currentTab][m_currentAnimation],
+            m_commandStack[m_currentTab].addCommand<DeleteFrameCommand>(
+                    m_tabs[m_currentTab]-> operator[](m_currentAnimation),
                     collider,
                     m_updateIndex
             );
@@ -191,8 +199,6 @@ namespace viewer {
             return;
         }
     }
-
-
 
     void ViewerManager::processFrames(const robot2D::FloatRect& clipRegion,
                                       const robot2D::vec2f& worldPosition,
@@ -221,53 +227,54 @@ namespace viewer {
 
                     for (const auto& frame: sortFrames) {
                         collider.setRect(frame.as<float>());
-                        m_commandStack.addCommand<AddFrameCommand>(m_tabs[m_currentTab][m_currentAnimation], collider);
-                        m_tabs[m_currentTab][m_currentAnimation].addFrame(collider, worldPosition);
+                        m_commandStack[m_currentTab].addCommand<AddFrameCommand>(
+                            m_tabs[m_currentTab] -> operator[](m_currentAnimation), collider
+                        );
+                        m_tabs[m_currentTab]-> operator[](m_currentAnimation).addFrame(collider, worldPosition);
                     }
                 } else {
-                    m_commandStack.addCommand<AddFrameCommand>(m_tabs[m_currentTab][m_currentAnimation], collider);
-                    m_tabs[m_currentTab][m_currentAnimation].addFrame(collider, worldPosition);
+                    m_commandStack[m_currentTab].addCommand<AddFrameCommand>(
+                            m_tabs[m_currentTab] -> operator[](m_currentAnimation),
+                            collider
+                    );
+                    m_tabs[m_currentTab] -> operator[](m_currentAnimation).addFrame(collider, worldPosition);
                 }
             } else {
-                m_tabs[m_currentTab][m_currentAnimation][m_updateIndex].showMovePoints = false;
+                m_tabs[m_currentTab] -> operator[](m_currentAnimation)[m_updateIndex].showMovePoints = false;
                 if (collider.notZero() && collider.state == Collider::State::Moving) {
-                    m_tabs[m_currentTab][m_currentAnimation][m_updateIndex].setRect(clipRegion);
+                    m_tabs[m_currentTab] -> operator[](m_currentAnimation)[m_updateIndex].setRect(clipRegion);
                 }
             }
         }
     }
 
     std::pair<bool, int> ViewerManager::getCollisionPair(const robot2D::vec2f& point) {
-        auto result = m_tabs[m_currentTab][m_currentAnimation].contains(point);
+        auto result = m_tabs[m_currentTab] -> operator[](m_currentAnimation).contains(point);
         if(result.first)
             m_updateIndex = result.second;
         else
             return {false, NO_INDEX};
-        return m_tabs[m_currentTab][m_currentAnimation].contains(point);
+        return m_tabs[m_currentTab] -> operator[](m_currentAnimation).contains(point);
     }
 
     void ViewerManager::setCollider(const robot2D::FloatRect& collidingRect) {
         if(m_updateIndex >= 0)
-            m_tabs[m_currentTab][m_currentAnimation][m_updateIndex].setRect(collidingRect);
+            m_tabs[m_currentTab] -> operator[](m_currentAnimation)[m_updateIndex].setRect(collidingRect);
     }
 
     Collider& ViewerManager::getCollider(int index) {
         //TODO(a.raag): Add asserts
         //assert(index < m_animations[m_currentAnimation].getSize());
-        return m_tabs[m_currentTab][m_currentAnimation][index];
+        return m_tabs[m_currentTab] -> operator[](m_currentAnimation)[index];
     }
 
     void ViewerManager::onNewTab(const NewTabMessage& message) {
-        m_tabs.emplace_back(Tab{});
-        m_currentTab = m_tabs.size() - 1;
-        m_currentAnimation = NO_INDEX;
-        m_updateIndex = NO_INDEX;
-
+        addNewTab();
+        m_namesContainer.addNames();
 
         auto* msg = m_messageBus.postMessage<AnimationPanelLoadEmptyMessage>(MessageID::AnimationPanelLoad);
         msg -> needAddAnimation = true;
         m_view -> updateView(m_currentTab, nullptr);
-        m_namesContainer.addNames();
     }
 
     void ViewerManager::onSwitchTab(const SwitchTabMessage& message) {
@@ -275,12 +282,32 @@ namespace viewer {
         m_currentAnimation = 0;
         m_updateIndex = NO_INDEX;
 
-        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab][m_currentAnimation]);
+        m_view -> updateView(m_currentTab, &m_tabs[m_currentTab] -> operator[](m_currentAnimation));
         m_namesContainer.updateIndex(m_currentTab);
     }
 
     void ViewerManager::onCloseTab(const CloseTabMessage& message) {
         m_currentAnimation = 0;
+        m_updateIndex = NO_INDEX;
+
+        if(m_tabs.size() > 1) {
+            m_tabs.erase(m_tabs.cbegin() + m_currentTab);
+            m_commandStack.erase(m_commandStack.cbegin() + m_currentTab);
+            m_namesContainer.removeNames(m_currentTab);
+        }
+        else {
+            m_tabs[0] -> clearAnimations();
+            m_commandStack[0].clear();
+            m_namesContainer[0].clear();
+        }
+
+        m_currentTab = 0;
+
+        if(message.save) {
+            viewer::SaveAnimationsMessage msg;
+            msg.filePath = message.savePath;
+            onSaveAnimations(msg);
+        }
     }
 
     void ViewerManager::setCutMode() {
@@ -288,6 +315,20 @@ namespace viewer {
             m_cutMode = CutMode::Manual;
         else
             m_cutMode = CutMode::Automatic;
+    }
+
+    void ViewerManager::update() {
+
+    }
+
+    void ViewerManager::addNewTab() {
+        m_tabs.emplace_back(std::make_shared<TabContainer>());
+        m_commandStack.emplace_back(CommandStack{});
+        m_docs.emplace_back(m_tabs.back());
+
+        m_currentTab = m_tabs.size() - 1;
+        m_currentAnimation = NO_INDEX;
+        m_updateIndex = NO_INDEX;
     }
 
 
